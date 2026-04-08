@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="signup.js"></script>
+    <title>FoodSaver</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      .content {
+        flex: 1;
+      }
+      header {
+        background: #ffffff;
+        padding: 20px 40px;
+      }
+      header a {
+        color: rgb(0, 0, 0);
+        text-decoration: none;
+        align-items: center;
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .content {
+        min-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: #000000;
+        width: 100%;
+        overflow: visible;
+        padding-top: 50px;
+      }
+      .container {
+        width: 380px;
+        background: white;
+        border-radius: 5px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        text-align: center;
+        animation: fadeIn 0.6s ease;
+      }
+
+      h2 {
+        color: rgb(0, 0, 0);
+        margin-bottom: 20px;
+        letter-spacing: 1px;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+      }
+
+      input:focus {
+        border-color: rgb(0, 0, 0);
+        outline: none;
+        box-shadow: 0 0 5px rgba(40, 40, 40, 0.4);
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        background: black;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+
+      button:hover {
+        background: black;
+        transform: scale(1.02);
+        color: white;
+      }
+
+      .switch {
+        margin-top: 15px;
+        color: rgb(0, 0, 0);
+        cursor: pointer;
+        font-size: 14px;
+        transition: 0.3s;
+      }
+
+      .switch:hover {
+        text-decoration: underline;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .title {
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+        color: #292929;
+        margin-bottom: 20px;
+      }
+
+      /* FOOTER*/
+      footer {
+        background: black;
+        color: white;
+        padding: 40px 20px 20px 20px;
+        font-size: 14px;
+      }
+      .footer-bottom {
+        text-align: center;
+        margin-top: 30px;
+        border-top: 1px solid #333;
+        padding-top: 10px;
+        font-size: 12px;
+        color: #ccc;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <nav><a href="index.html">FoodSaver</a></nav>
+    </header>
+
+    <div class="content">
+      <!-- ROLE SELECTION -->
+      <div class="container" id="roleSelection">
+        <div class="title">Welcome</div>
+        <div class="subtitle">Choose how you want to use the platform</div>
+        <div class="role-btns">
+          <button onclick="selectRole('customer')">Customer</button>
+          <button onclick="selectRole('owner')">Owner</button>
+        </div>
+      </div>
+
+      <!-- AUTH SECTION -->
+      <div class="container hidden" id="authSection">
+        <h2 id="roleTitle"></h2>
+
+        <!-- LOGIN -->
+        <div id="loginForm">
+          <input type="email" placeholder="Email" id="loginEmail" />
+          <input type="password" placeholder="Password" id="loginPassword" />
+          <button onclick="login()">Login</button>
+          <p class="switch" onclick="toggleForm('signup')">
+            Don't have an account? Sign up
+          </p>
+        </div>
+
+        <!-- SIGNUP -->
+        <div id="signupForm" class="hidden">
+          <!-- OWNER ONLY FIELDS -->
+          <div id="ownerFields" class="hidden">
+            <input
+              type="text"
+              placeholder="Restaurant Name"
+              id="restaurantName"
+            />
+            <input
+              type="text"
+              placeholder="Restaurant Address"
+              id="restaurantAddress"
+            />
+            <input
+              type="text"
+              placeholder="Type of Food (e.g. Pizza, Sushi)"
+              id="foodType"
+            />
+          </div>
+
+          <input type="text" placeholder="Your Name" id="signupName" />
+          <input type="text" placeholder="Your Address" id="signupAddress" />
+          <div style="position: relative">
+            <input type="text" id="cityInput" placeholder="City" />
+          </div>
+          <input type="email" placeholder="Email" id="signupEmail" />
+          <input type="password" placeholder="Password" id="signupPassword" />
+          <button onclick="signup()">Sign Up</button>
+          <p class="switch" onclick="toggleForm('login')">
+            Already have an account? Login
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-bottom">&copy; 2026 FoodSaver. All rights reserved.</div>
+  </footer>
+</html>
