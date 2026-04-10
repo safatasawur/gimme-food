@@ -5,7 +5,7 @@ class FoodItem {
     this.category = category;
     this.ingredients = ingredients;
     this.expiryDate = expiryDate;
-    this.type = type; // discount, free, meal, bakery, beverage, etc.
+    this.type = type;
   }
 }
 
@@ -72,6 +72,18 @@ const modalType = document.getElementById("modalType");
 const modalExpiry = document.getElementById("modalExpiry");
 const modalIngredients = document.getElementById("modalIngredients");
 
+// Add Item modal elements
+const addItemBtn = document.getElementById("addItemBtn");
+const addItemModal = document.getElementById("addItemModal");
+const closeAddModal = document.getElementById("closeAddModal");
+const addItemForm = document.getElementById("addItemForm");
+
+const foodNameInput = document.getElementById("foodName");
+const foodCategoryInput = document.getElementById("foodCategory");
+const foodIngredientsInput = document.getElementById("foodIngredients");
+const foodExpiryInput = document.getElementById("foodExpiry");
+const foodTypeInput = document.getElementById("foodType");
+
 function getBadgeClass(type) {
   if (type === "discount") return "badge-discount";
   if (type === "free") return "badge-free";
@@ -112,8 +124,7 @@ function renderFoodItems(items) {
 }
 
 function openModal(id) {
-  const item = foodItems.find(food => food.id === id);
-
+  const item = foodItems.find((food) => food.id === id);
   if (!item) return;
 
   modalName.textContent = item.name;
@@ -129,17 +140,67 @@ function closeDetailModal() {
   modal.classList.add("hidden");
 }
 
+function openAddItemModal() {
+  addItemModal.classList.remove("hidden");
+}
+
+function closeAddItemModal() {
+  addItemModal.classList.add("hidden");
+  addItemForm.reset();
+}
+
+function getNextId() {
+  if (foodItems.length === 0) return 1;
+  return Math.max(...foodItems.map((item) => item.id)) + 1;
+}
+
+addItemForm.addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const name = foodNameInput.value.trim();
+  const category = foodCategoryInput.value;
+  const ingredients = foodIngredientsInput.value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item !== "");
+  const expiryDate = foodExpiryInput.value;
+  const type = foodTypeInput.value;
+
+  const newFoodItem = new FoodItem(
+    getNextId(),
+    name,
+    category,
+    ingredients,
+    expiryDate,
+    type
+  );
+
+  foodItems.push(newFoodItem);
+  renderFoodItems(foodItems);
+  closeAddItemModal();
+});
+
 closeModal.addEventListener("click", closeDetailModal);
+addItemBtn.addEventListener("click", openAddItemModal);
+closeAddModal.addEventListener("click", closeAddItemModal);
 
 window.addEventListener("click", (e) => {
   if (e.target === modal) {
     closeDetailModal();
   }
+
+  if (e.target === addItemModal) {
+    closeAddItemModal();
+  }
 });
 
 filterButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    document.querySelector(".filter-btn.active").classList.remove("active");
+    const activeButton = document.querySelector(".filter-btn.active");
+    if (activeButton) {
+      activeButton.classList.remove("active");
+    }
+
     button.classList.add("active");
 
     const filter = button.dataset.filter;
