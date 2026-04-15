@@ -153,31 +153,32 @@ function getNextId() {
   if (foodItems.length === 0) return 1;
   return Math.max(...foodItems.map((item) => item.id)) + 1;
 }
+const form = document.getElementById("addItemForm");
 
-addItemForm.addEventListener("submit", function (e) {
+form.addEventListener("submit", function(e) {
   e.preventDefault();
 
-  const name = foodNameInput.value.trim();
-  const category = foodCategoryInput.value;
-  const ingredients = foodIngredientsInput.value
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item !== "");
-  const expiryDate = foodExpiryInput.value;
-  const type = foodTypeInput.value;
+  const items = JSON.parse(localStorage.getItem("foodItems")) || [];
 
-  const newFoodItem = new FoodItem(
-    getNextId(),
-    name,
-    category,
-    ingredients,
-    expiryDate,
-    type
-  );
+  const newItem = {
+    id: Date.now(),
+    restaurant: localStorage.getItem("restaurantName") || "My Restaurant",
+    name: document.getElementById("foodName").value,
+    category: document.getElementById("foodCategory").value,
+    type: document.getElementById("foodType").value,
+    expiryDate: document.getElementById("foodExpiry").value,
+    quantity: 1,
+    ingredients: document.getElementById("foodIngredients").value
+  };
 
-  foodItems.push(newFoodItem);
-  renderFoodItems(foodItems);
-  closeAddItemModal();
+  items.push(newItem);
+
+  localStorage.setItem("foodItems", JSON.stringify(items));
+
+  alert("Item added ✔");
+
+  form.reset();
+  location.reload();
 });
 
 closeModal.addEventListener("click", closeDetailModal);

@@ -14,7 +14,7 @@ function selectRole(role) {
 
     document.getElementById("loginForm").classList.remove("hidden");
     document.getElementById("signupForm").classList.add("hidden");
-    document.getElementById("ownerFields").classList.add("hidden");
+    document.getElementById("ownerFields").classList.add("hidden")
   }, 400);
 }
 
