@@ -53,6 +53,9 @@ def query_db(query, args=(), one=False):
 # --- api endpoints (the 'bridges') ---
 
 @app.route('/api/food', methods=['GET'])
+
+
+
 def get_all_food():
     """
     this is the 'read' bridge. 
