@@ -1,84 +1,106 @@
-import sqlite3
+import mysql.connector
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-# initialize the flask application
+# flask is the web framework that creates the actual server
+# it listens for requests from the frontend (like when a button is clicked)
 app = Flask(__name__)
 
-# enable cors so the frontend team can access this api from their browsers
+# cors stands for cross-origin resource sharing
+# this allows your frontend files to safely talk to your backend script
 CORS(app)
 
-# path to the database file provided by the sql team
-db_path = "foodsaver.db"
+# db_config is a dictionary containing all the credentials for the database
+# these details act like a 'login' for the python script to enter the sql server
+db_config = {
+    'host': '192.168.1.10',   # the specific network address of the sql computer
+    'user': 'your_user',      # the username granted permission to access the data
+    'password': 'your_password', # the secret key associated with that user
+    'database': 'your_db'     # the specific database name within the sql server
+}
 
 def query_db(query, args=(), one=False):
     """
-    utility function to run sql commands.
-    it opens a connection, executes the query, and returns results as dictionaries.
+    this helper function manages the lifecycle of a database query.
+    it handles connecting, executing the command, and cleaning up.
     """
-    conn = sqlite3.connect(db_path)
-    # this line allows us to access data by column names (e.g., row['name'])
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
+    # this line initiates the digital 'handshake' with the mysql server
+    conn = mysql.connector.connect(**db_config)
+    
+    # a cursor is like a digital pointer that executes the sql commands
+    # setting dictionary=true ensures the results look like javascript objects
+    cur = conn.cursor(dictionary=True)
+    
+    # execute takes the sql command and injects the variables safely
+    # this prevents 'sql injection' which is a common security vulnerability
     cur.execute(query, args)
+    
+    # fetchall retrieves every row that matches the query request
     rv = cur.fetchall()
+    
+    # commit is necessary for commands that change data (insert/update)
+    # it ensures the changes are permanently saved in the sql storage
     conn.commit()
+    
+    # closing the cursor and connection releases system resources
+    # this keeps the computer's memory clean and prevents lag
+    cur.close()
     conn.close()
-    # return a single result or a list of results
+    
+    # if 'one' is true, it returns only the first item instead of a list
     return (rv[0] if rv else None) if one else rv
 
-# --- endpoints for the frontend team ---
+# --- api endpoints (the 'bridges') ---
 
 @app.route('/api/food', methods=['GET'])
 def get_all_food():
     """
-    this is the 'get' bridge. 
-    the frontend calls this to populate the food cards on the website.
-    it fetches every row from the sql team's 'food' table.
+    this is the 'read' bridge. 
+    it fetches all available food items to display on the customer page.
     """
+    # query_db runs the selection command on the 'food' table
     results = query_db("select * from food")
-    # convert sql objects into a json format the frontend team can read
-    return jsonify([dict(row) for row in results])
+    
+    # jsonify turns the python list into a format the web browser understands
+    return jsonify(results)
 
 @app.route('/api/signup', methods=['POST'])
 def signup_user():
     """
-    this is the 'post' bridge for new users.
-    it takes the data from the frontend signup form and pushes it into sql.
+    this is the 'write' bridge.
+    it takes user data from the browser and inserts it into the database.
     """
+    # request.json captures the data packets sent from the frontend javascript
     data = request.json
     try:
-        # insert user data into the sql team's 'users' table
+        # the %s acts as a secure placeholder for the user's personal details
         query_db(
-            "insert into users (name, email, password, role, address) values (?, ?, ?, ?, ?)",
+            "insert into users (name, email, password, role, address) values (%s, %s, %s, %s, %s)",
             (data['name'], data['email'], data['password'], data['role'], data['address'])
         )
-        return jsonify({"message": "user successfully saved to sql database"}), 201
+        # 201 is the standard success code for creating a new resource
+        return jsonify({"message": "success"}), 201
     except Exception as e:
-        # if the sql team's table is missing or data is wrong, return the error
+        # if the database rejects the data, we send back the error message
         return jsonify({"error": str(e)}), 400
 
 @app.route('/api/request-food', methods=['POST'])
 def process_request():
     """
-    this bridge handles the transaction when a customer clicks 'request'.
-    it tells the sql database to decrease the quantity of an item by 1.
+    this is the 'update' bridge.
+    it decrements the quantity of food when a user successfully claims it.
     """
+    # we get the specific item id from the frontend team's request
     data = request.json
-    # update the food table only if there is stock left (quantity > 0)
-    query_db("update food set quantity = quantity - 1 where id = ? and quantity > 0", (data['id'],))
-    return jsonify({"status": "inventory updated in sql"}), 200
+    
+    # this sql command updates the inventory in real-time
+    # the 'quantity > 0' check prevents the count from going into negatives
+    query_db("update food set quantity = quantity - 1 where id = %s and quantity > 0", (data['id'],))
+    
+    return jsonify({"status": "updated"}), 200
 
-# start the bridge server
+# this block ensures the server only starts if this script is run directly
 if __name__ == '__main__':
-    # the server runs on http://127.0.0.1:5000
+    # debug=true allows the script to reload automatically when you save changes
+    # port 5000 is the default channel for flask communications
     app.run(debug=True, port=5000)
-
-
-# flask is a lightweight python framework that acts as the server-side 
-# engine for our app, handling requests from the website and sending back data. 
-# sqlite is a simple, file-based database that stores all actual information
-# like user accounts and food inventory, in a single permanent file. together, they 
-# form the backend bridge. flask listens for actions on the frontend and tells sqlite 
-# when to save or retrieve data ensuring nothing is lost when the browser is closed.
-
