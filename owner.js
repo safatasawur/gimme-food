@@ -1,64 +1,94 @@
 class FoodItem {
-  constructor(id, name, category, ingredients, expiryDate, type) {
+  constructor(id, restaurant, name, category, ingredients, expiryDate, type, quantity) {
     this.id = id;
+    this.restaurant = restaurant;
     this.name = name;
     this.category = category;
     this.ingredients = ingredients;
     this.expiryDate = expiryDate;
     this.type = type;
+    this.quantity = quantity;
   }
 }
 
-const foodItems = [
+const defaultFoodItems = [
   new FoodItem(
     1,
+    "Green Bowl",
     "Chicken Biryani",
     "Meal",
     ["Rice", "Chicken", "Spices", "Yogurt"],
     "2026-03-30",
-    "discount"
+    "discount",
+    3
   ),
   new FoodItem(
     2,
+    "Bake House",
     "Vegetable Sandwich",
     "Bakery",
     ["Bread", "Tomato", "Lettuce", "Cheese"],
     "2026-03-29",
-    "free"
+    "free",
+    2
   ),
   new FoodItem(
     3,
+    "Cafe Bliss",
     "Iced Coffee",
     "Beverage",
     ["Milk", "Coffee", "Sugar", "Ice"],
     "2026-03-30",
-    "beverage"
+    "beverage",
+    4
   ),
   new FoodItem(
     4,
+    "Pasta Point",
     "Pasta Alfredo",
     "Meal",
     ["Pasta", "Cream", "Cheese", "Herbs"],
     "2026-03-31",
-    "meal"
+    "meal",
+    1
   ),
   new FoodItem(
     5,
+    "Bake House",
     "Chocolate Muffin",
     "Bakery",
     ["Flour", "Cocoa", "Eggs", "Sugar"],
     "2026-03-30",
-    "bakery"
+    "bakery",
+    5
   ),
   new FoodItem(
     6,
+    "Fresh Sip",
     "Fruit Juice",
     "Beverage",
     ["Orange", "Apple", "Mango"],
     "2026-03-29",
-    "discount"
+    "discount",
+    2
   )
 ];
+
+function getFoodItems() {
+  const saved = JSON.parse(localStorage.getItem("foodItems"));
+  if (saved && Array.isArray(saved)) {
+    return saved;
+  }
+
+  localStorage.setItem("foodItems", JSON.stringify(defaultFoodItems));
+  return defaultFoodItems;
+}
+
+function saveFoodItems(items) {
+  localStorage.setItem("foodItems", JSON.stringify(items));
+}
+
+let foodItems = getFoodItems();
 
 const inventoryGrid = document.getElementById("inventoryGrid");
 const filterButtons = document.querySelectorAll(".filter-btn");
@@ -72,17 +102,10 @@ const modalType = document.getElementById("modalType");
 const modalExpiry = document.getElementById("modalExpiry");
 const modalIngredients = document.getElementById("modalIngredients");
 
-// Add Item modal elements
 const addItemBtn = document.getElementById("addItemBtn");
 const addItemModal = document.getElementById("addItemModal");
 const closeAddModal = document.getElementById("closeAddModal");
 const addItemForm = document.getElementById("addItemForm");
-
-const foodNameInput = document.getElementById("foodName");
-const foodCategoryInput = document.getElementById("foodCategory");
-const foodIngredientsInput = document.getElementById("foodIngredients");
-const foodExpiryInput = document.getElementById("foodExpiry");
-const foodTypeInput = document.getElementById("foodType");
 
 function getBadgeClass(type) {
   if (type === "discount") return "badge-discount";
@@ -99,6 +122,11 @@ function getBadgeLabel(type) {
 function renderFoodItems(items) {
   inventoryGrid.innerHTML = "";
 
+  if (items.length === 0) {
+    inventoryGrid.innerHTML = `<p>No food items found.</p>`;
+    return;
+  }
+
   items.forEach((item) => {
     const card = document.createElement("div");
     card.classList.add("food-card");
@@ -110,8 +138,10 @@ function renderFoodItems(items) {
       </div>
 
       <div class="food-details">
+        <p><strong>Restaurant:</strong> ${item.restaurant || "-"}</p>
         <p><strong>Category:</strong> ${item.category}</p>
         <p><strong>Expiry:</strong> ${item.expiryDate}</p>
+        <p><strong>Quantity:</strong> ${item.quantity ?? 1}</p>
       </div>
 
       <div class="card-actions">
@@ -131,7 +161,9 @@ function openModal(id) {
   modalCategory.textContent = item.category;
   modalType.textContent = getBadgeLabel(item.type);
   modalExpiry.textContent = item.expiryDate;
-  modalIngredients.textContent = item.ingredients.join(", ");
+  modalIngredients.textContent = Array.isArray(item.ingredients)
+    ? item.ingredients.join(", ")
+    : item.ingredients;
 
   modal.classList.remove("hidden");
 }
@@ -149,36 +181,31 @@ function closeAddItemModal() {
   addItemForm.reset();
 }
 
-function getNextId() {
-  if (foodItems.length === 0) return 1;
-  return Math.max(...foodItems.map((item) => item.id)) + 1;
-}
-const form = document.getElementById("addItemForm");
-
-form.addEventListener("submit", function(e) {
+addItemForm.addEventListener("submit", function (e) {
   e.preventDefault();
 
-  const items = JSON.parse(localStorage.getItem("foodItems")) || [];
+  foodItems = getFoodItems();
 
   const newItem = {
     id: Date.now(),
     restaurant: localStorage.getItem("restaurantName") || "My Restaurant",
-    name: document.getElementById("foodName").value,
+    name: document.getElementById("foodName").value.trim(),
     category: document.getElementById("foodCategory").value,
-    type: document.getElementById("foodType").value,
-    expiryDate: document.getElementById("foodExpiry").value,
-    quantity: 1,
     ingredients: document.getElementById("foodIngredients").value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    expiryDate: document.getElementById("foodExpiry").value,
+    type: document.getElementById("foodType").value,
+    quantity: 1
   };
 
-  items.push(newItem);
+  foodItems.push(newItem);
+  saveFoodItems(foodItems);
 
-  localStorage.setItem("foodItems", JSON.stringify(items));
-
-  alert("Item added ✔");
-
-  form.reset();
-  location.reload();
+  closeAddItemModal();
+  renderFoodItems(foodItems);
+  alert("Item added successfully ✔");
 });
 
 closeModal.addEventListener("click", closeDetailModal);
@@ -186,25 +213,19 @@ addItemBtn.addEventListener("click", openAddItemModal);
 closeAddModal.addEventListener("click", closeAddItemModal);
 
 window.addEventListener("click", (e) => {
-  if (e.target === modal) {
-    closeDetailModal();
-  }
-
-  if (e.target === addItemModal) {
-    closeAddItemModal();
-  }
+  if (e.target === modal) closeDetailModal();
+  if (e.target === addItemModal) closeAddItemModal();
 });
 
 filterButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const activeButton = document.querySelector(".filter-btn.active");
-    if (activeButton) {
-      activeButton.classList.remove("active");
-    }
+    if (activeButton) activeButton.classList.remove("active");
 
     button.classList.add("active");
-
     const filter = button.dataset.filter;
+
+    foodItems = getFoodItems();
 
     if (filter === "all") {
       renderFoodItems(foodItems);
