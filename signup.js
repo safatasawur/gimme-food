@@ -43,30 +43,32 @@ function login() {
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
 
-  const savedEmail = localStorage.getItem("savedEmail");
-  const savedPassword = localStorage.getItem("savedPassword");
-  const savedRole = localStorage.getItem("savedRole");
+const users = JSON.parse(localStorage.getItem("users")) || [];
 
+const foundUser = users.find(user =>
+  user.email === email &&
+  user.password === password &&
+  user.role === currentRole
+);
   if (!email || !password) {
     showMessage("Please fill all fields ❗");
     return;
   }
 
-  if (email === savedEmail && password === savedPassword && currentRole === savedRole) {
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("userRole", currentRole);
-    localStorage.setItem("userEmail", email);
+if (foundUser) {
+  localStorage.setItem("isLoggedIn", "true");
+  localStorage.setItem("userRole", currentRole);
+  localStorage.setItem("userEmail", email);
+  localStorage.setItem("currentUser", JSON.stringify(foundUser));
 
-    showMessage(currentRole + " logged in successfully ✔");
+  showMessage(currentRole + " logged in successfully ✔");
 
-    if (currentRole === "owner") {
-      window.location.href = "owner.html";
-    } else if (currentRole === "customer") {
-      window.location.href = "customer.html";
-    }
-  } else {
-    showMessage("Invalid email, password, or role ❗");
+  if (currentRole === "owner") {
+    window.location.href = "owner.html";
+  } else if (currentRole === "customer") {
+    window.location.href = "customer.html";
   }
+}
 }
 
 function signup() {
@@ -75,11 +77,14 @@ function signup() {
   const city = document.getElementById("cityInput").value.trim();
   const email = document.getElementById("signupEmail").value.trim();
   const password = document.getElementById("signupPassword").value.trim();
+  let restaurantName = "";
+let restaurantAddress = "";
+let foodType = "";
 
   if (currentRole === "owner") {
-    const restaurantName = document.getElementById("restaurantName").value.trim();
-    const restaurantAddress = document.getElementById("restaurantAddress").value.trim();
-    const foodType = document.getElementById("foodType").value.trim();
+     restaurantName = document.getElementById("restaurantName").value.trim();
+     restaurantAddress = document.getElementById("restaurantAddress").value.trim();
+     foodType = document.getElementById("foodType").value.trim();
 
     if (!restaurantName || !restaurantAddress || !foodType) {
       showMessage("Please fill all owner fields ❗");
@@ -96,12 +101,28 @@ function signup() {
     return;
   }
 
-  localStorage.setItem("savedName", name);
-  localStorage.setItem("savedAddress", address);
-  localStorage.setItem("savedCity", city);
-  localStorage.setItem("savedEmail", email);
-  localStorage.setItem("savedPassword", password);
-  localStorage.setItem("savedRole", currentRole);
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+
+const existingUser = users.find(user => user.email === email);
+
+if (existingUser) {
+  showMessage("This email is already registered ❗");
+  return;
+}
+
+users.push({
+  name: name,
+  address: address,
+  city: city,
+  email: email,
+  password: password,
+  role: currentRole,
+  restaurantName: currentRole === "owner" ? restaurantName : "",
+  restaurantAddress: currentRole === "owner" ? restaurantAddress : "",
+  restaurantFoodType: currentRole === "owner" ? foodType : ""
+});
+
+localStorage.setItem("users", JSON.stringify(users));
 
   showMessage(currentRole + " signed up successfully ✔");
   toggleForm("login");

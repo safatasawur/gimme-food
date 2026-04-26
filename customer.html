@@ -234,7 +234,9 @@
     <header>
       <a href="index.html">FoodSaver</a>
       <div class="nav-right">
-        <button class="nav-btn" id="viewRequestsBtn">My Requests</button>
+        <button class="nav-btn" onclick="window.location.href='request.html'">
+         My Requests
+       </button>
         <button class="nav-btn" onclick="goToProfile()">Profile</button>
 
       </div>
@@ -280,10 +282,7 @@
         <div class="food-grid" id="foodGrid"></div>
       </section>
 
-      <section class="request-history" id="requestsSection">
-        <h2 class="section-title">My Requested Food</h2>
-        <div class="history-list" id="historyList"></div>
-      </section>
+      
     </main>
 
     <footer>&copy; 2026 FoodSaver. All rights reserved.</footer>

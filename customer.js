@@ -1,5 +1,7 @@
-let availableFood = JSON.parse(localStorage.getItem("foodItems")) || [];
-
+let availableFood = []
+function loadFood() {
+  availableFood = JSON.parse(localStorage.getItem("foodItems")) || [];
+}
 const foodGrid = document.getElementById("foodGrid");
 const historyList = document.getElementById("historyList");
 const searchInput = document.getElementById("searchInput");
@@ -14,7 +16,7 @@ function checkAccess() {
   const userRole = localStorage.getItem("userRole");
 
   if (isLoggedIn !== "true" || userRole !== "customer") {
-    window.location.href = "signup.html";
+    window.location.href = "index.html";
   }
 }
 
@@ -119,6 +121,7 @@ function renderRequestHistory() {
 }
 
 function filterFood() {
+  loadFood()
   const searchValue = searchInput.value.toLowerCase().trim();
   const selectedType = typeFilter.value.toLowerCase();
   const selectedCategory = categoryFilter.value.toLowerCase();
@@ -142,6 +145,7 @@ function filterFood() {
 }
 
 function requestFood(id) {
+  loadFood()
   const item = availableFood.find((food) => food.id === id);
   if (!item) return;
 
@@ -195,14 +199,18 @@ function goToProfile() {
 searchInput.addEventListener("input", filterFood);
 typeFilter.addEventListener("change", filterFood);
 categoryFilter.addEventListener("change", filterFood);
-logoutBtn.addEventListener("click", logout);
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", logout);
+}
 
-viewRequestsBtn.addEventListener("click", () => {
-  requestsSection.scrollIntoView({ behavior: "smooth" });
-});
 
 window.requestFood = requestFood;
 
+// checkAccess();
+// renderFoodItems(availableFood);
+// renderRequestHistory();
 checkAccess();
-renderFoodItems(availableFood);
+
+loadFood();
+filterFood();
 renderRequestHistory();
