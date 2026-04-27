@@ -147,5 +147,54 @@ def seed_user():
         return jsonify({'error': 'server_error'}), 500
 
 
+@app.route('/api/login', methods=['POST'])
+def login_user():
+    data = request.json or {}
+    email = data.get('email')
+    password = data.get('password')
+    if not email or not password:
+        return jsonify({'error': 'missing_fields'}), 400
+    try:
+        # Try user table first
+        user = query_db('SELECT user_id, username, email FROM user WHERE email = %s AND password = %s', (email, password), one=True)
+        if user:
+            # default role customer
+            return jsonify({'user': {'id': user.get('user_id'), 'username': user.get('username'), 'email': user.get('email')}, 'role': 'customer'}), 200
+
+        # Try seller table
+        seller = query_db('SELECT store_id, username, email FROM seller WHERE email = %s AND password = %s', (email, password), one=True)
+        if seller:
+            return jsonify({'user': {'id': seller.get('store_id'), 'username': seller.get('username'), 'email': seller.get('email')}, 'role': 'owner'}), 200
+
+        return jsonify({'error': 'invalid_credentials'}), 401
+    except Exception as e:
+        print('Login error:', e)
+        return jsonify({'error': 'server_error'}), 500
+
+
+@app.route('/api/request-food', methods=['POST'])
+def request_food():
+    data = request.json or {}
+    email = data.get('email')
+    item_id = data.get('item_id')
+    if not email or not item_id:
+        return jsonify({'error': 'missing_fields'}), 400
+    try:
+        user = query_db('SELECT user_id FROM user WHERE email = %s', (email,), one=True)
+        if not user:
+            return jsonify({'error': 'user_not_found'}), 404
+
+        item = query_db('SELECT item_id FROM menu_item WHERE item_id = %s', (item_id,), one=True)
+        if not item:
+            return jsonify({'error': 'item_not_found'}), 404
+
+        # Insert request with status pending
+        last = execute_db('INSERT INTO food_request (user_id, item_id, status) VALUES (%s, %s, %s)', (user.get('user_id'), item_id, 'pending'))
+        return jsonify({'message': 'requested', 'request_id': last}), 201
+    except Exception as e:
+        print('Request food error:', e)
+        return jsonify({'error': 'server_error'}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

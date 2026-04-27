@@ -42,33 +42,65 @@ function toggleForm(form) {
 function login() {
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
-
-const users = JSON.parse(localStorage.getItem("users")) || [];
-
-const foundUser = users.find(user =>
-  user.email === email &&
-  user.password === password &&
-  user.role === currentRole
-);
   if (!email || !password) {
     showMessage("Please fill all fields ❗");
     return;
   }
 
-if (foundUser) {
-  localStorage.setItem("isLoggedIn", "true");
-  localStorage.setItem("userRole", currentRole);
-  localStorage.setItem("userEmail", email);
-  localStorage.setItem("currentUser", JSON.stringify(foundUser));
+  // Try server login first, fallback to localStorage if server fails
+  (async function() {
+    try {
+      const resp = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: password })
+      });
 
-  showMessage(currentRole + " logged in successfully ✔");
+      if (resp.ok) {
+        const data = await resp.json();
+        const role = data.role || currentRole || 'customer';
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userRole", role);
+        localStorage.setItem("userEmail", email);
+        localStorage.setItem("currentUser", JSON.stringify(data.user || {}));
+        showMessage(role + " logged in successfully ✔ (online)");
+        if (role === "owner") {
+          window.location.href = "owner.html";
+        } else {
+          window.location.href = "customer.html";
+        }
+        return;
+      } else {
+        console.warn('Server login failed with status', resp.status);
+      }
+    } catch (err) {
+      console.warn('Login server error, falling back to localStorage', err);
+    }
 
-  if (currentRole === "owner") {
-    window.location.href = "owner.html";
-  } else if (currentRole === "customer") {
-    window.location.href = "customer.html";
-  }
-}
+    // Fallback to localStorage
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const foundUser = users.find(user =>
+      user.email === email &&
+      user.password === password &&
+      user.role === currentRole
+    );
+
+    if (foundUser) {
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userRole", currentRole);
+      localStorage.setItem("userEmail", email);
+      localStorage.setItem("currentUser", JSON.stringify(foundUser));
+      showMessage(currentRole + " logged in successfully ✔ (offline)");
+
+      if (currentRole === "owner") {
+        window.location.href = "owner.html";
+      } else if (currentRole === "customer") {
+        window.location.href = "customer.html";
+      }
+    } else {
+      showMessage("Invalid credentials ❗");
+    }
+  })();
 }
 
 async function signup() {

@@ -198,6 +198,22 @@ function requestFood(id) {
     requestedAt: new Date().toLocaleString()
   });
 
+  // Try to notify server of request; fall back to local only
+  (async function() {
+    try {
+      const resp = await fetch('http://localhost:5000/api/request-food', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, item_id: item.id })
+      });
+      if (!resp.ok) {
+        console.warn('Server request-food responded with', resp.status);
+      }
+    } catch (err) {
+      console.warn('Network error sending request to server', err);
+    }
+  })();
+
   saveRequests(requests);
   renderFoodItems(availableFood);
   renderRequestHistory();
