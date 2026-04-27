@@ -2,6 +2,24 @@ let availableFood = []
 function loadFood() {
   availableFood = JSON.parse(localStorage.getItem("foodItems")) || [];
 }
+
+// Try to load food from server and fall back to localStorage
+async function loadFoodFromServer() {
+  try {
+    const resp = await fetch('http://localhost:5000/api/food');
+    if (!resp.ok) throw new Error('Bad response');
+    const data = await resp.json();
+    if (Array.isArray(data) && data.length) {
+      availableFood = data;
+      localStorage.setItem('foodItems', JSON.stringify(availableFood));
+      renderFoodItems(availableFood);
+      return;
+    }
+  } catch (err) {
+    console.warn('Could not load food from server, using localStorage', err);
+    loadFood();
+  }
+}
 const foodGrid = document.getElementById("foodGrid");
 const historyList = document.getElementById("historyList");
 const searchInput = document.getElementById("searchInput");
@@ -211,6 +229,8 @@ window.requestFood = requestFood;
 // renderRequestHistory();
 checkAccess();
 
-loadFood();
-filterFood();
-renderRequestHistory();
+// Attempt to load from server first
+loadFoodFromServer().then(() => {
+  filterFood();
+  renderRequestHistory();
+});

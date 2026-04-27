@@ -84,6 +84,22 @@ function getFoodItems() {
   return defaultFoodItems;
 }
 
+// Try to sync local inventory with server if available
+async function syncInventoryWithServer() {
+  try {
+    const resp = await fetch('http://localhost:5000/api/food');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (Array.isArray(data) && data.length) {
+      localStorage.setItem('foodItems', JSON.stringify(data));
+      foodItems = data;
+      renderFoodItems(foodItems);
+    }
+  } catch (err) {
+    console.warn('Could not sync inventory with server', err);
+  }
+}
+
 function saveFoodItems(items) {
   localStorage.setItem("foodItems", JSON.stringify(items));
 }
