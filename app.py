@@ -9,10 +9,10 @@ CORS(app)
 
 # --- MYSQL CONFIGURATION ---
 db_config = {
-    'host':     os.environ.get('MYSQLHOST', 'metro.proxy.rlwy.net'),
-    'port':     int(os.environ.get('MYSQLPORT', 41339)),
-    'user':     os.environ.get('MYSQLUSER', 'root'),
-    'password': os.environ.get('MYSQLPASSWORD', 'ZuOfBdZfwqPvthhVbSnCNgBoFRkVmwbg'),
+    'host':     os.environ['MYSQLHOST'],
+    'port':     int(os.environ.get('MYSQLPORT', 3306)),
+    'user':     os.environ['MYSQLUSER'],
+    'password': os.environ['MYSQLPASSWORD'],
     'database': os.environ.get('MYSQLDATABASE', 'railway'),
     'ssl':      {'ssl': {}},
     'cursorclass': pymysql.cursors.DictCursor,
