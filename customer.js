@@ -6,7 +6,7 @@ function loadFood() {
 // Try to load food from server and fall back to localStorage
 async function loadFoodFromServer() {
   try {
-    const resp = await fetch('http://localhost:5000/api/food');
+    const resp = await fetch('/api/food');
     if (!resp.ok) throw new Error('Bad response');
     const data = await resp.json();
     if (Array.isArray(data) && data.length) {
@@ -201,7 +201,7 @@ function requestFood(id) {
   // Try to notify server of request; fall back to local only
   (async function() {
     try {
-      const resp = await fetch('http://localhost:5000/api/request-food', {
+      const resp = await fetch('/api/request-food', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: userEmail, item_id: item.id })

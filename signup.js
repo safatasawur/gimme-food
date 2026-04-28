@@ -50,7 +50,7 @@ function login() {
   // Try server login first, fallback to localStorage if server fails
   (async function() {
     try {
-      const resp = await fetch('http://localhost:5000/api/login', {
+      const resp = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: password })
@@ -156,7 +156,7 @@ let foodType = "";
   // Try to register on server first; if it fails, fall back to localStorage
   try {
     const payload = { username: name, email: email, password: password };
-    const resp = await fetch('http://localhost:5000/api/signup-user', {
+    const resp = await fetch('/api/signup-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

@@ -87,7 +87,7 @@ function getFoodItems() {
 // Try to sync local inventory with server if available
 async function syncInventoryWithServer() {
   try {
-    const resp = await fetch('http://localhost:5000/api/food');
+    const resp = await fetch('/api/food');
     if (!resp.ok) return;
     const data = await resp.json();
     if (Array.isArray(data) && data.length) {
