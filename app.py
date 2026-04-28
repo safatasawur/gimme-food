@@ -43,3 +43,22 @@ def init_db():
     conn.close()
 
     return "DB initialized"
+
+@app.route("/test-db")
+def test_db():
+    import pymysql, os
+
+    conn = pymysql.connect(
+        host="metro.proxy.rlwy.net",
+        port=41339,
+        user="root",
+        password="...",
+        database="railway",
+        ssl={"ssl": {}}
+    )
+
+    cur = conn.cursor()
+    cur.execute("SELECT 1")
+    return str(cur.fetchone())
+
+
