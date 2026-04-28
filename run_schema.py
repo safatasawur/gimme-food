@@ -1,7 +1,7 @@
 import pymysql
 
 conn = pymysql.connect(
-    host="mysql.railway.internal",
+    host="metro.proxy.rlwy.net",
     user="root",
     password="ZuOfBdZfwqPvthhVbSnCNgBoFRkVmwbg",
     database="railway",
