@@ -1,176 +1,95 @@
 import os
-import mysql.connector
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+import mysql.connector
+from mysql.connector import Error
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Allows your frontend JS to talk to this backend
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-
+# --- MYSQL CONFIGURATION ---
+# These values are read from Railway environment variables.
+# Set them in your Railway service: Settings > Variables
 db_config = {
-    'host': os.environ.get('DB_HOST', 'localhost'),
-    'user': os.environ.get('DB_USER', 'teamfood'),
-    'password': os.environ.get('DB_PASS', 'strongpassword'),
-    'database': os.environ.get('DB_NAME', 'gimme_food'),
-    'port': int(os.environ.get('DB_PORT', 3306))
+    'host':     os.environ.get('MYSQLHOST', 'localhost'),
+    'port':     int(os.environ.get('MYSQLPORT', 3306)),
+    'user':     os.environ.get('MYSQLUSER', 'root'),
+    'password': os.environ.get('MYSQLPASSWORD', ''),
+    'database': os.environ.get('MYSQLDATABASE', 'foodsaver_db'),
 }
 
-def get_conn():
-    return mysql.connector.connect(**db_config)
+def get_db_connection():
+    try:
+        conn = mysql.connector.connect(**db_config)
+        return conn
+    except Error as e:
+        print(f"Error connecting to MySQL: {e}")
+        return None
 
-def query_db(query, args=(), one=False):
-    conn = get_conn()
-    cur = conn.cursor(dictionary=True)
-    cur.execute(query, args)
-    rv = cur.fetchall()
-    conn.commit()
-    cur.close()
-    conn.close()
-    return (rv[0] if rv else None) if one else rv
-
-def execute_db(query, args=()):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute(query, args)
-    lastid = cur.lastrowid
-    conn.commit()
-    cur.close()
-    conn.close()
-    return lastid
-
-@app.route('/')
-def index():
-    return send_from_directory(ROOT_DIR, 'index.html')
-
-@app.route('/<path:path>')
-def static_proxy(path):
-    return send_from_directory(ROOT_DIR, path)
+# --- API ROUTES ---
 
 @app.route('/api/food', methods=['GET'])
-def get_all_food():
-    try:
-        sql = ("SELECT m.item_id, m.item_name, m.item_category, m.item_expiry_date, "
-               "m.item_quantity, m.item_price, s.store_name "
-               "FROM menu_item m LEFT JOIN stores s ON m.store_id = s.store_id")
-        rows = query_db(sql)
-        mapped = []
-        for r in rows:
-            mapped.append({
-                'id': r.get('item_id'),
-                'name': r.get('item_name'),
-                'restaurant': r.get('store_name') or '',
-                'category': r.get('item_category'),
-                'expiryDate': r.get('item_expiry_date').isoformat() if r.get('item_expiry_date') else None,
-                'quantity': r.get('item_quantity'),
-                'price': float(r.get('item_price')) if r.get('item_price') is not None else None,
-                'type': 'regular'
-            })
-        return jsonify(mapped)
-    except Exception as e:
-        print('Error fetching food:', e)
-        return jsonify([]), 200
+def get_food():
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "DB Connection Failed"}), 500
 
-@app.route('/api/signup-user', methods=['POST'])
-def signup_user():
-    data = request.json or {}
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    if not username or not email or not password:
-        return jsonify({'error': 'missing_fields'}), 400
-    try:
-        exists = query_db('SELECT user_id FROM user WHERE email = %s', (email,), one=True)
-        if exists:
-            return jsonify({'error': 'email_exists'}), 409
-        execute_db('INSERT INTO user (username, email, password) VALUES (%s, %s, %s)',
-                   (username, email, password))
-        return jsonify({'message': 'success'}), 201
-    except Exception as e:
-        print('Signup error:', e)
-        return jsonify({'error': 'server_error'}), 500
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM menu_items")
+    items = cursor.fetchall()
 
-@app.route('/api/check-schema', methods=['GET'])
-def check_schema():
-    expected = {'tables': ['menu_item', 'stores', 'user', 'categories']}
-    result = {}
-    try:
-        conn = get_conn()
-        cur = conn.cursor()
-        cur.execute("SHOW TABLES")
-        tables = [row[0] for row in cur.fetchall()]
-        cur.close()
-        conn.close()
-        for t in expected['tables']:
-            result[t] = t in tables
-        return jsonify({'ok': True, 'tables': result})
-    except Exception as e:
-        print('Schema check error:', e)
-        return jsonify({'ok': False, 'error': str(e)}), 500
+    cursor.close()
+    conn.close()
+    return jsonify(items)
 
-@app.route('/api/seed-user', methods=['POST'])
-def seed_user():
-    data = request.json or {}
-    email = data.get('email')
-    username = data.get('username', 'testuser')
-    password = data.get('password', 'testpass')
-    if not email:
-        return jsonify({'error': 'missing_email'}), 400
-    try:
-        exists = query_db('SELECT user_id FROM user WHERE email = %s', (email,), one=True)
-        if exists:
-            return jsonify({'message': 'exists'}), 200
-        execute_db('INSERT INTO user (username, email, password, user_city) VALUES (%s, %s, %s, %s)',
-                   (username, email, password, 'Unknown'))
-        return jsonify({'message': 'seeded'}), 201
-    except Exception as e:
-        print('Seed user error:', e)
-        return jsonify({'error': 'server_error'}), 500
+@app.route('/api/food', methods=['POST'])
+def add_food():
+    data = request.json
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "DB Connection Failed"}), 500
 
-@app.route('/api/login', methods=['POST'])
-def login_user():
-    data = request.json or {}
-    email = data.get('email')
-    password = data.get('password')
-    if not email or not password:
-        return jsonify({'error': 'missing_fields'}), 400
-    try:
-        user = query_db('SELECT user_id, username, email FROM user WHERE email = %s AND password = %s', (email, password), one=True)
-        if user:
-            return jsonify({'user': {'id': user.get('user_id'), 'username': user.get('username'), 'email': user.get('email')}, 'role': 'customer'}), 200
+    cursor = conn.cursor()
 
-        seller = query_db('SELECT store_id, username, email FROM seller WHERE email = %s AND password = %s', (email, password), one=True)
-        if seller:
-            return jsonify({'user': {'id': seller.get('store_id'), 'username': seller.get('username'), 'email': seller.get('email')}, 'role': 'owner'}), 200
+    query = """INSERT INTO menu_items 
+               (restaurant, name, category, ingredients, expiry_date, type, quantity) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s)"""
 
-        return jsonify({'error': 'invalid_credentials'}), 401
-    except Exception as e:
-        print('Login error:', e)
-        return jsonify({'error': 'server_error'}), 500
+    values = (
+        data['restaurant'],
+        data['name'],
+        data['category'],
+        ",".join(data['ingredients']),  # Convert list to string for DB
+        data['expiryDate'],
+        data['type'],
+        data.get('quantity', 1)
+    )
 
-@app.route('/api/request-food', methods=['POST'])
-def request_food():
-    data = request.json or {}
-    email = data.get('email')
-    item_id = data.get('item_id')
-    if not email or not item_id:
-        return jsonify({'error': 'missing_fields'}), 400
-    try:
-        user = query_db('SELECT user_id FROM user WHERE email = %s', (email,), one=True)
-        if not user:
-            return jsonify({'error': 'user_not_found'}), 404
+    cursor.execute(query, values)
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({"message": "Item added successfully"}), 201
 
-        item = query_db('SELECT item_id FROM menu_item WHERE item_id = %s', (item_id,), one=True)
-        if not item:
-            return jsonify({'error': 'item_not_found'}), 404
+@app.route('/api/request/<int:item_id>', methods=['PATCH'])
+def request_food(item_id):
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "DB Connection Failed"}), 500
 
-        last = execute_db('INSERT INTO food_request (user_id, item_id, status) VALUES (%s, %s, %s)',
-                          (user.get('user_id'), item_id, 'pending'))
-        return jsonify({'message': 'requested', 'request_id': last}), 201
-    except Exception as e:
-        print('Request food error:', e)
-        return jsonify({'error': 'server_error'}), 500
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE menu_items SET quantity = quantity - 1 WHERE id = %s AND quantity > 0",
+        (item_id,)
+    )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({"message": "Inventory updated"})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    # Railway injects the PORT env variable — this is critical!
+    port = int(os.environ.get('PORT', 5000))
+    print(f"Bridge server running on port {port}")
+    app.run(host='0.0.0.0', port=port, debug=False)
