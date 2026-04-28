@@ -3,12 +3,11 @@ import mysql.connector
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-
 app = Flask(__name__)
 CORS(app)
 
-# Database configuration - adjust to your local MySQL credentials if needed
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 db_config = {
     'host': os.environ.get('DB_HOST', 'localhost'),
     'user': os.environ.get('DB_USER', 'teamfood'),
@@ -17,10 +16,8 @@ db_config = {
     'port': int(os.environ.get('DB_PORT', 3306))
 }
 
-
 def get_conn():
     return mysql.connector.connect(**db_config)
-
 
 def query_db(query, args=(), one=False):
     conn = get_conn()
@@ -32,7 +29,6 @@ def query_db(query, args=(), one=False):
     conn.close()
     return (rv[0] if rv else None) if one else rv
 
-
 def execute_db(query, args=()):
     conn = get_conn()
     cur = conn.cursor()
@@ -43,22 +39,16 @@ def execute_db(query, args=()):
     conn.close()
     return lastid
 
-
-# Serve frontend static files from repo root so frontend and backend share origin
 @app.route('/')
 def index():
     return send_from_directory(ROOT_DIR, 'index.html')
 
-
 @app.route('/<path:path>')
 def static_proxy(path):
-    # Serve any file from the workspace directory (html, js, css)
     return send_from_directory(ROOT_DIR, path)
-
 
 @app.route('/api/food', methods=['GET'])
 def get_all_food():
-    # Try to return fields the frontend expects. Map SQL columns to frontend keys.
     try:
         sql = ("SELECT m.item_id, m.item_name, m.item_category, m.item_expiry_date, "
                "m.item_quantity, m.item_price, s.store_name "
@@ -72,16 +62,14 @@ def get_all_food():
                 'restaurant': r.get('store_name') or '',
                 'category': r.get('item_category'),
                 'expiryDate': r.get('item_expiry_date').isoformat() if r.get('item_expiry_date') else None,
-                'quantity': r.get('item_quantity') if r.get('item_quantity') is not None else r.get('item_stock'),
+                'quantity': r.get('item_quantity'),
                 'price': float(r.get('item_price')) if r.get('item_price') is not None else None,
                 'type': 'regular'
             })
         return jsonify(mapped)
     except Exception as e:
-        # Don't leak sensitive info; log and return empty list
         print('Error fetching food:', e)
         return jsonify([]), 200
-
 
 @app.route('/api/signup-user', methods=['POST'])
 def signup_user():
@@ -92,11 +80,9 @@ def signup_user():
     if not username or not email or not password:
         return jsonify({'error': 'missing_fields'}), 400
     try:
-        # Check existing
         exists = query_db('SELECT user_id FROM user WHERE email = %s', (email,), one=True)
         if exists:
             return jsonify({'error': 'email_exists'}), 409
-
         execute_db('INSERT INTO user (username, email, password) VALUES (%s, %s, %s)',
                    (username, email, password))
         return jsonify({'message': 'success'}), 201
@@ -104,13 +90,9 @@ def signup_user():
         print('Signup error:', e)
         return jsonify({'error': 'server_error'}), 500
 
-
 @app.route('/api/check-schema', methods=['GET'])
 def check_schema():
-    # Verify presence of key tables and columns the frontend/backend expect
-    expected = {
-        'tables': ['menu_item', 'stores', 'user', 'categories']
-    }
+    expected = {'tables': ['menu_item', 'stores', 'user', 'categories']}
     result = {}
     try:
         conn = get_conn()
@@ -125,7 +107,6 @@ def check_schema():
     except Exception as e:
         print('Schema check error:', e)
         return jsonify({'ok': False, 'error': str(e)}), 500
-
 
 @app.route('/api/seed-user', methods=['POST'])
 def seed_user():
@@ -146,7 +127,6 @@ def seed_user():
         print('Seed user error:', e)
         return jsonify({'error': 'server_error'}), 500
 
-
 @app.route('/api/login', methods=['POST'])
 def login_user():
     data = request.json or {}
@@ -155,13 +135,10 @@ def login_user():
     if not email or not password:
         return jsonify({'error': 'missing_fields'}), 400
     try:
-        # Try user table first
         user = query_db('SELECT user_id, username, email FROM user WHERE email = %s AND password = %s', (email, password), one=True)
         if user:
-            # default role customer
             return jsonify({'user': {'id': user.get('user_id'), 'username': user.get('username'), 'email': user.get('email')}, 'role': 'customer'}), 200
 
-        # Try seller table
         seller = query_db('SELECT store_id, username, email FROM seller WHERE email = %s AND password = %s', (email, password), one=True)
         if seller:
             return jsonify({'user': {'id': seller.get('store_id'), 'username': seller.get('username'), 'email': seller.get('email')}, 'role': 'owner'}), 200
@@ -170,7 +147,6 @@ def login_user():
     except Exception as e:
         print('Login error:', e)
         return jsonify({'error': 'server_error'}), 500
-
 
 @app.route('/api/request-food', methods=['POST'])
 def request_food():
@@ -188,13 +164,13 @@ def request_food():
         if not item:
             return jsonify({'error': 'item_not_found'}), 404
 
-        # Insert request with status pending
-        last = execute_db('INSERT INTO food_request (user_id, item_id, status) VALUES (%s, %s, %s)', (user.get('user_id'), item_id, 'pending'))
+        last = execute_db('INSERT INTO food_request (user_id, item_id, status) VALUES (%s, %s, %s)',
+                          (user.get('user_id'), item_id, 'pending'))
         return jsonify({'message': 'requested', 'request_id': last}), 201
     except Exception as e:
         print('Request food error:', e)
         return jsonify({'error': 'server_error'}), 500
 
-
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
