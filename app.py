@@ -5,9 +5,9 @@ import pymysql
 import pymysql.cursors
 
 app = Flask(__name__)
-CORS(app)  # Allows your frontend JS to talk to this backend
+CORS(app)
 
-# --- MYSQL CONFIGURATION (Railway env vars) ---
+# --- MYSQL CONFIGURATION ---
 db_config = {
     'host':     os.environ.get('MYSQLHOST', 'metro.proxy.rlwy.net'),
     'port':     int(os.environ.get('MYSQLPORT', 41339)),
@@ -23,8 +23,72 @@ def get_db_connection():
         conn = pymysql.connect(**db_config)
         return conn
     except Exception as e:
-        print(f"Error connecting to MySQL: {e}")
+        print(f"DB connection error: {e}")
         return None
+
+def init_db():
+    """Create tables if they don't exist yet."""
+    conn = get_db_connection()
+    if conn is None:
+        print("WARNING: Could not connect to DB on startup.")
+        return
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS `user` (
+                  `user_id` INT NOT NULL AUTO_INCREMENT,
+                  `username` VARCHAR(16) NOT NULL,
+                  `email` VARCHAR(255) NOT NULL,
+                  `password` VARCHAR(255) NOT NULL,
+                  `create_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                  `user_city` VARCHAR(45) NOT NULL,
+                  PRIMARY KEY (`user_id`),
+                  UNIQUE KEY `email_UNIQUE` (`email`),
+                  UNIQUE KEY `username_UNIQUE` (`username`)
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS `seller` (
+                  `seller_id` VARCHAR(45) NOT NULL,
+                  `username` VARCHAR(16) NOT NULL,
+                  `email` VARCHAR(255) NOT NULL,
+                  `password` VARCHAR(255) NOT NULL,
+                  `create_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                  `seller_city` VARCHAR(45) NOT NULL,
+                  PRIMARY KEY (`seller_id`),
+                  UNIQUE KEY `username_UNIQUE` (`username`),
+                  UNIQUE KEY `email_UNIQUE` (`email`)
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS `categories` (
+                  `category_id` VARCHAR(30) NOT NULL,
+                  `category_name` VARCHAR(45) NOT NULL,
+                  PRIMARY KEY (`category_id`)
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS `menu_items` (
+                  `id` INT NOT NULL AUTO_INCREMENT,
+                  `restaurant` VARCHAR(100) NOT NULL,
+                  `name` VARCHAR(80) NOT NULL,
+                  `category` VARCHAR(45) NOT NULL,
+                  `ingredients` TEXT NULL,
+                  `expiry_date` DATE NOT NULL,
+                  `type` VARCHAR(20) NOT NULL,
+                  `quantity` INT NOT NULL DEFAULT 1,
+                  PRIMARY KEY (`id`)
+                )
+            """)
+        conn.commit()
+        print("Database tables ready.")
+    except Exception as e:
+        print(f"DB init error: {e}")
+    finally:
+        conn.close()
+
+# Run on startup
+init_db()
 
 # --- HEALTH CHECK ---
 
@@ -37,12 +101,11 @@ def test_db():
     conn = get_db_connection()
     if conn is None:
         return jsonify({"error": "DB Connection Failed"}), 500
-    cur = conn.cursor()
-    cur.execute("SELECT 1")
-    result = cur.fetchone()
-    cur.close()
+    with conn.cursor() as cur:
+        cur.execute("SELECT 1 as ok")
+        result = cur.fetchone()
     conn.close()
-    return jsonify({"db": "connected", "result": str(result)})
+    return jsonify({"db": "connected", "result": result})
 
 # --- API ROUTES ---
 
@@ -51,11 +114,9 @@ def get_food():
     conn = get_db_connection()
     if conn is None:
         return jsonify({"error": "DB Connection Failed"}), 500
-
     with conn.cursor() as cursor:
         cursor.execute("SELECT * FROM menu_items")
         items = cursor.fetchall()
-
     conn.close()
     return jsonify(items)
 
@@ -65,11 +126,9 @@ def add_food():
     conn = get_db_connection()
     if conn is None:
         return jsonify({"error": "DB Connection Failed"}), 500
-
     query = """INSERT INTO menu_items 
                (restaurant, name, category, ingredients, expiry_date, type, quantity) 
                VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-
     values = (
         data['restaurant'],
         data['name'],
@@ -79,7 +138,6 @@ def add_food():
         data['type'],
         data.get('quantity', 1)
     )
-
     with conn.cursor() as cursor:
         cursor.execute(query, values)
     conn.commit()
@@ -91,7 +149,6 @@ def request_food(item_id):
     conn = get_db_connection()
     if conn is None:
         return jsonify({"error": "DB Connection Failed"}), 500
-
     with conn.cursor() as cursor:
         cursor.execute(
             "UPDATE menu_items SET quantity = quantity - 1 WHERE id = %s AND quantity > 0",
