@@ -113,8 +113,8 @@ init_db()
 def home():
     return jsonify({"status": "OK", "message": "GimmeFood API is running"})
 
-@app.route('/test-db')
-def test_db():
+@app.route('/os.getenv()')
+def os.getenv()():
     conn = get_db_connection()
     if conn is None:
         return jsonify({"error": "DB Connection Failed"}), 500
