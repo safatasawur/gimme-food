@@ -5,7 +5,7 @@ conn = pymysql.connect(
     user="root",
     password="ZuOfBdZfwqPvthhVbSnCNgBoFRkVmwbg",
     database="railway",
-    port=3306
+    port=41339
 )
 
 cursor = conn.cursor()
