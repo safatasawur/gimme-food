@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pymysql
@@ -8,15 +9,31 @@ app = Flask(__name__)
 CORS(app)
 
 # --- MYSQL CONFIGURATION ---
-db_config = {
-    'host':     os.environ['MYSQLHOST'],
-    'port':     int(os.environ.get('MYSQLPORT', 3306)),
-    'user':     os.environ['MYSQLUSER'],
-    'password': os.environ['MYSQLPASSWORD'],
-    'database': os.environ.get('MYSQLDATABASE', 'railway'),
-    'ssl':      {'ssl': {}},
-    'cursorclass': pymysql.cursors.DictCursor,
-}
+# Railway provides MYSQL_URL as a full connection string — use that first.
+# Format: mysql://user:password@host:port/database
+def _build_db_config():
+    url = os.environ.get('MYSQL_URL') or os.environ.get('DATABASE_URL')
+    if url:
+        parsed = urlparse(url)
+        return {
+            'host':     parsed.hostname,
+            'port':     parsed.port or 3306,
+            'user':     parsed.username,
+            'password': parsed.password,
+            'database': parsed.path.lstrip('/'),
+            'cursorclass': pymysql.cursors.DictCursor,
+        }
+    # Fallback to individual env vars
+    return {
+        'host':     os.environ.get('MYSQLHOST', 'localhost'),
+        'port':     int(os.environ.get('MYSQLPORT', 3306)),
+        'user':     os.environ.get('MYSQLUSER', 'root'),
+        'password': os.environ.get('MYSQLPASSWORD', ''),
+        'database': os.environ.get('MYSQLDATABASE', 'railway'),
+        'cursorclass': pymysql.cursors.DictCursor,
+    }
+
+db_config = _build_db_config()
 
 def get_db_connection():
     try:
