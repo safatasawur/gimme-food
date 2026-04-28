@@ -12,10 +12,14 @@ CORS(app)
 # Railway provides MYSQL_URL as a full connection string — use that first.
 # Format: mysql://user:password@host:port/database
 def _build_db_config():
-    url = os.environ.get('MYSQL_URL') or os.environ.get('DATABASE_URL')
+    print(f"DEBUG: MYSQL_URL = {os.environ.get('MYSQL_URL')}")
+    print(f"DEBUG: DATABASE_URL = {os.environ.get('DATABASE_URL')}")
+
+    url = os.environ.get('DATABASE_URL') or os.environ.get('MYSQL_URL')
     if url:
+        print(f"DEBUG: Using connection string: {url[:20]}...")
         parsed = urlparse(url)
-        return {
+        config = {
             'host':     parsed.hostname,
             'port':     parsed.port or 3306,
             'user':     parsed.username,
@@ -23,8 +27,11 @@ def _build_db_config():
             'database': parsed.path.lstrip('/'),
             'cursorclass': pymysql.cursors.DictCursor,
         }
+        print(f"DEBUG: Parsed config - host={config['host']}, user={config['user']}, db={config['database']}")
+        return config
     # Fallback to individual env vars
-    return {
+    print("DEBUG: No connection string found, falling back to individual env vars")
+    config = {
         'host':     os.environ.get('MYSQLHOST', 'localhost'),
         'port':     int(os.environ.get('MYSQLPORT', 3306)),
         'user':     os.environ.get('MYSQLUSER', 'root'),
@@ -32,6 +39,8 @@ def _build_db_config():
         'database': os.environ.get('MYSQLDATABASE', 'railway'),
         'cursorclass': pymysql.cursors.DictCursor,
     }
+    print(f"DEBUG: Fallback config - host={config['host']}, user={config['user']}, db={config['database']}")
+    return config
 
 db_config = _build_db_config()
 
