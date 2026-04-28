@@ -10,11 +10,11 @@ CORS(app)
 
 # Database configuration - adjust to your local MySQL credentials if needed
 db_config = {
-    'host': 'localhost',
-    'user': 'teamfood',
-    'password': 'strongpassword',
-    'database': 'gimme_food',
-    'port': 3306
+    'host': os.environ.get('DB_HOST', 'localhost'),
+    'user': os.environ.get('DB_USER', 'teamfood'),
+    'password': os.environ.get('DB_PASS', 'strongpassword'),
+    'database': os.environ.get('DB_NAME', 'gimme_food'),
+    'port': int(os.environ.get('DB_PORT', 3306))
 }
 
 

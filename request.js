@@ -12,6 +12,20 @@ function getRequests() {
   return JSON.parse(localStorage.getItem("customerRequests")) || [];
 }
 
+async function submitFoodRequest(data) {
+  const resp = await fetch('/api/request-food', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!resp.ok) {
+    throw new Error('Failed to submit food request');
+  }
+  return resp.json();
+}
+
 function renderRequestHistory() {
   const requests = getRequests();
   const userEmail = localStorage.getItem("userEmail");
