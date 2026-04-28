@@ -2,6 +2,24 @@ let availableFood = []
 function loadFood() {
   availableFood = JSON.parse(localStorage.getItem("foodItems")) || [];
 }
+
+// Try to load food from server and fall back to localStorage
+async function loadFoodFromServer() {
+  try {
+    const resp = await fetch('/api/food');
+    if (!resp.ok) throw new Error('Bad response');
+    const data = await resp.json();
+    if (Array.isArray(data) && data.length) {
+      availableFood = data;
+      localStorage.setItem('foodItems', JSON.stringify(availableFood));
+      renderFoodItems(availableFood);
+      return;
+    }
+  } catch (err) {
+    console.warn('Could not load food from server, using localStorage', err);
+    loadFood();
+  }
+}
 const foodGrid = document.getElementById("foodGrid");
 const historyList = document.getElementById("historyList");
 const searchInput = document.getElementById("searchInput");
@@ -180,6 +198,22 @@ function requestFood(id) {
     requestedAt: new Date().toLocaleString()
   });
 
+  // Try to notify server of request; fall back to local only
+  (async function() {
+    try {
+      const resp = await fetch('/api/request-food', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, item_id: item.id })
+      });
+      if (!resp.ok) {
+        console.warn('Server request-food responded with', resp.status);
+      }
+    } catch (err) {
+      console.warn('Network error sending request to server', err);
+    }
+  })();
+
   saveRequests(requests);
   renderFoodItems(availableFood);
   renderRequestHistory();
@@ -211,6 +245,8 @@ window.requestFood = requestFood;
 // renderRequestHistory();
 checkAccess();
 
-loadFood();
-filterFood();
-renderRequestHistory();
+// Attempt to load from server first
+loadFoodFromServer().then(() => {
+  filterFood();
+  renderRequestHistory();
+});
