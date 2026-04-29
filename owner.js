@@ -87,7 +87,7 @@ function getFoodItems() {
 // Try to sync local inventory with server if available
 async function syncInventoryWithServer() {
   try {
-    const resp = await fetch('/api/food');
+    const resp = await fetch(window.API_BASE_URL + '/api/food');
     if (!resp.ok) return;
     const data = await resp.json();
     if (Array.isArray(data) && data.length) {
@@ -218,6 +218,30 @@ addItemForm.addEventListener("submit", function (e) {
 
   foodItems.push(newItem);
   saveFoodItems(foodItems);
+
+  // Sync with server
+  (async function() {
+    try {
+      const resp = await fetch(window.API_BASE_URL + '/api/food', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          restaurant: newItem.restaurant,
+          name: newItem.name,
+          category: newItem.category,
+          ingredients: newItem.ingredients,
+          expiryDate: newItem.expiryDate,
+          type: newItem.type,
+          quantity: newItem.quantity
+        })
+      });
+      if (!resp.ok) {
+        console.warn('Server add-food responded with', resp.status);
+      }
+    } catch (err) {
+      console.warn('Network error adding food to server', err);
+    }
+  })();
 
   closeAddItemModal();
   renderFoodItems(foodItems);

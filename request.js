@@ -13,7 +13,7 @@ function getRequests() {
 }
 
 async function submitFoodRequest(data) {
-  const resp = await fetch('/api/request-food', {
+  const resp = await fetch(window.API_BASE_URL + '/api/request-food', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
