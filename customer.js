@@ -6,9 +6,10 @@ function loadFood() {
 // Try to load food from server and fall back to localStorage
 async function loadFoodFromServer() {
   try {
-    const resp = await fetch(window.API_BASE_URL + 'https://gimme-food-production.up.railway.app/api/food');
+    const resp = await fetch(window.API_BASE_URL + '/api/food');
     if (!resp.ok) throw new Error('Bad response');
     const data = await resp.json();
+
     if (Array.isArray(data) && data.length) {
       availableFood = data;
       localStorage.setItem('foodItems', JSON.stringify(availableFood));
