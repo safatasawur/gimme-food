@@ -48,7 +48,7 @@ function login() {
   }
 
   // Try server login first, fallback to localStorage if server fails
-  (async function() {
+  (async function () {
     try {
       const resp = await fetch(window.API_BASE_URL + '/api/login', {
         method: 'POST',
@@ -110,13 +110,13 @@ async function signup() {
   const email = document.getElementById("signupEmail").value.trim();
   const password = document.getElementById("signupPassword").value.trim();
   let restaurantName = "";
-let restaurantAddress = "";
-let foodType = "";
+  let restaurantAddress = "";
+  let foodType = "";
 
   if (currentRole === "owner") {
-     restaurantName = document.getElementById("restaurantName").value.trim();
-     restaurantAddress = document.getElementById("restaurantAddress").value.trim();
-     foodType = document.getElementById("foodType").value.trim();
+    restaurantName = document.getElementById("restaurantName").value.trim();
+    restaurantAddress = document.getElementById("restaurantAddress").value.trim();
+    foodType = document.getElementById("foodType").value.trim();
 
     if (!restaurantName || !restaurantAddress || !foodType) {
       showMessage("Please fill all owner fields ❗");
