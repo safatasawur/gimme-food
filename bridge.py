@@ -5,37 +5,42 @@ import mysql.connector
 from mysql.connector import Error
 
 app = Flask(__name__)
-CORS(app)  # Allows your frontend JS to talk to this backend
+CORS(app)
 
-# --- MYSQL CONFIGURATION ---
-# These values are read from Railway environment variables.
-# Set them in your Railway service: Settings > Variables
+# Correct Railway internal config (NO external proxy)
 db_config = {
-    'host':     os.environ.get('MYSQLHOST', 'metro.proxy.rlwy.net'),
-    'port':     int(os.environ.get('MYSQLPORT', 41339)),
-    'user':     os.environ.get('MYSQLUSER', 'root'),
-    'password': os.environ.get('MYSQLPASSWORD', 'ZuOfBdZfwqPvthhVbSnCNgBoFRkVmwbg'),
-    'database': os.environ.get('MYSQLDATABASE', 'railway'),
+    'host': os.environ.get('MYSQLHOST'),
+    'port': int(os.environ.get('MYSQLPORT', 3306)),
+    'user': os.environ.get('MYSQLUSER'),
+    'password': os.environ.get('MYSQLPASSWORD'),
+    'database': os.environ.get('MYSQLDATABASE'),
 }
 
 def get_db_connection():
     try:
-        conn = mysql.connector.connect(**db_config)
-        return conn
+        return mysql.connector.connect(**db_config)
     except Error as e:
-        print(f"Error connecting to MySQL: {e}")
+        print("DB ERROR:", e)
         return None
 
-# --- API ROUTES ---
+# --- ROUTES ---
+
+@app.route('/')
+def home():
+    return "API running"
 
 @app.route('/api/food', methods=['GET'])
 def get_food():
     conn = get_db_connection()
     if conn is None:
-        return jsonify({"error": "DB Connection Failed"}), 500
+        return jsonify({"error": "DB failed"}), 500
 
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM menu_items")
+    cursor.execute("""
+        SELECT item_id, item_name, item_category, item_expiry_date, 
+               item_quantity, item_price, store_id
+        FROM menu_item
+    """)
     items = cursor.fetchall()
 
     cursor.close()
@@ -45,51 +50,57 @@ def get_food():
 @app.route('/api/food', methods=['POST'])
 def add_food():
     data = request.json
+
     conn = get_db_connection()
     if conn is None:
-        return jsonify({"error": "DB Connection Failed"}), 500
+        return jsonify({"error": "DB failed"}), 500
 
     cursor = conn.cursor()
 
-    query = """INSERT INTO menu_items 
-               (restaurant, name, category, ingredients, expiry_date, type, quantity) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+    query = """
+        INSERT INTO menu_item 
+        (item_name, item_category, item_expiry_date, item_quantity, item_price, store_id)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
 
     values = (
-        data['restaurant'],
-        data['name'],
-        data['category'],
-        ",".join(data['ingredients']),  # Convert list to string for DB
-        data['expiryDate'],
-        data['type'],
-        data.get('quantity', 1)
+        data.get('name'),
+        data.get('category'),
+        data.get('expiryDate'),
+        data.get('quantity', 1),
+        data.get('price', 0),
+        data.get('store_id', 1)
     )
 
     cursor.execute(query, values)
     conn.commit()
+
     cursor.close()
     conn.close()
-    return jsonify({"message": "Item added successfully"}), 201
+
+    return jsonify({"message": "Item added"}), 201
 
 @app.route('/api/request/<int:item_id>', methods=['PATCH'])
 def request_food(item_id):
     conn = get_db_connection()
     if conn is None:
-        return jsonify({"error": "DB Connection Failed"}), 500
+        return jsonify({"error": "DB failed"}), 500
 
     cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE menu_items SET quantity = quantity - 1 WHERE id = %s AND quantity > 0",
-        (item_id,)
-    )
+
+    cursor.execute("""
+        UPDATE menu_item 
+        SET item_quantity = item_quantity - 1 
+        WHERE item_id = %s AND item_quantity > 0
+    """, (item_id,))
 
     conn.commit()
+
     cursor.close()
     conn.close()
-    return jsonify({"message": "Inventory updated"})
+
+    return jsonify({"message": "Updated"})
 
 if __name__ == '__main__':
-    # Railway injects the PORT env variable — this is critical!
-    port = int(os.environ.get('PORT', 5000))
-    print(f"Bridge server running on port {port}")
-    app.run(host='0.0.0.0', port=port, debug=False)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
