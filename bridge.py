@@ -1,4 +1,5 @@
 import os
+import sys
 from urllib.parse import urlparse
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -8,10 +9,14 @@ import pymysql.cursors
 app = Flask(__name__)
 CORS(app)
 
+print("DEBUG: Bridge server starting...")
+
 # --- MYSQL CONFIGURATION ---
 def _build_db_config():
     # Railway provides MYSQL_URL or DATABASE_URL as a full connection string
     url = os.environ.get('MYSQL_URL') or os.environ.get('DATABASE_URL')
+    print(f"DEBUG: Found URL: {url[:30]}..." if url else "DEBUG: No connection URL found")
+    
     if url:
         parsed = urlparse(url)
         return {
@@ -21,33 +26,42 @@ def _build_db_config():
             'password': parsed.password,
             'database': parsed.path.lstrip('/'),
             'cursorclass': pymysql.cursors.DictCursor,
+            'connect_timeout': 10
         }
     
     # Fallback to individual Railway env vars or localhost
-    return {
+    config = {
         'host':     os.environ.get('MYSQLHOST', 'localhost'),
         'port':     int(os.environ.get('MYSQLPORT', 3306)),
         'user':     os.environ.get('MYSQLUSER', 'root'),
         'password': os.environ.get('MYSQLPASSWORD', ''),
         'database': os.environ.get('MYSQLDATABASE', 'railway'),
         'cursorclass': pymysql.cursors.DictCursor,
+        'connect_timeout': 10
     }
+    print(f"DEBUG: Using fallback config for host: {config['host']}")
+    return config
 
-db_config = _build_db_config()
+try:
+    db_config = _build_db_config()
+except Exception as e:
+    print(f"DEBUG: Error building DB config: {e}")
+    db_config = {}
 
 def get_db_connection():
     try:
         conn = pymysql.connect(**db_config)
         return conn
     except Exception as e:
-        print(f"Error connecting to MySQL: {e}")
+        print(f"DEBUG: Error connecting to MySQL: {e}")
         return None
 
 def init_db():
     """Create tables if they don't exist yet."""
+    print("DEBUG: Initializing database...")
     conn = get_db_connection()
     if conn is None:
-        print("WARNING: Could not connect to DB on startup.")
+        print("DEBUG: WARNING: Could not connect to DB on startup.")
         return
     try:
         with conn.cursor() as cursor:
@@ -96,14 +110,17 @@ def init_db():
                 )
             """)
         conn.commit()
-        print("Database tables ready.")
+        print("DEBUG: Database tables ready.")
     except Exception as e:
-        print(f"DB init error: {e}")
+        print(f"DEBUG: DB init error: {e}")
     finally:
         conn.close()
 
-# Run on startup
-init_db()
+# Run on startup (but wrap in try to prevent master process crash)
+try:
+    init_db()
+except Exception as e:
+    print(f"DEBUG: Startup init failed: {e}")
 
 # --- ROUTES ---
 
