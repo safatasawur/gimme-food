@@ -11,8 +11,8 @@ CORS(app)  # Allows your frontend JS to talk to this backend
 # These values are read from Railway environment variables.
 # Set them in your Railway service: Settings > Variables
 db_config = {
-    'host':     os.environ.get('MYSQLHOST', 'localhost'),
-    'port':     int(os.environ.get('MYSQLPORT', 3306)),
+    'host':     os.environ.get('MYSQLHOST', 'metro.proxy.rlwy.net'),
+    'port':     int(os.environ.get('MYSQLPORT', 41339)),
     'user':     os.environ.get('MYSQLUSER', 'root'),
     'password': os.environ.get('MYSQLPASSWORD', 'ZuOfBdZfwqPvthhVbSnCNgBoFRkVmwbg'),
     'database': os.environ.get('MYSQLDATABASE', 'railway'),
