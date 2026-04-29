@@ -14,7 +14,7 @@ db_config = {
     'host':     os.environ.get('MYSQLHOST', 'localhost'),
     'port':     int(os.environ.get('MYSQLPORT', 3306)),
     'user':     os.environ.get('MYSQLUSER', 'root'),
-    'password': os.environ.get('MYSQLPASSWORD', ''),
+    'password': os.environ.get('MYSQLPASSWORD', 'ZuOfBdZfwqPvthhVbSnCNgBoFRkVmwbg'),
     'database': os.environ.get('MYSQLDATABASE', 'foodsaver_db'),
 }
 
