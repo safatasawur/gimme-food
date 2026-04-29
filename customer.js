@@ -164,20 +164,28 @@ function filterFood() {
 }
 
 function requestFood(id) {
-  loadFood()
-  const item = availableFood.find((food) => food.id === id);
+  loadFood();
+  const item = availableFood.find(food => food.id === id);
   if (!item) return;
 
   const userEmail = localStorage.getItem("userEmail");
   const requests = getRequests();
 
-  const alreadyRequested = requests.some(
-    (request) =>
-      request.userEmail === userEmail &&
-      request.restaurant === item.restaurant &&
-      request.name === item.name
-  );
+  item.quantity -= 1;
 
+  requests.push({
+    id: Date.now(),
+    userEmail,
+    name: item.name,
+    restaurant: item.restaurant,
+    category: item.category,
+    requestedAt: new Date().toLocaleString()
+  });
+
+  saveRequests(requests);
+  renderFoodItems(availableFood);
+  renderRequestHistory();
+}
   if (alreadyRequested) {
     alert("You already requested one portion of this food item.");
     return;
