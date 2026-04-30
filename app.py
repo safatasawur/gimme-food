@@ -7,7 +7,7 @@ import pymysql
 import pymysql.cursors
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 print("DEBUG: App server starting...")
 
