@@ -27,8 +27,6 @@ const searchInput = document.getElementById("searchInput");
 const typeFilter = document.getElementById("typeFilter");
 const categoryFilter = document.getElementById("categoryFilter");
 const logoutBtn = document.getElementById("logoutBtn");
-const viewRequestsBtn = document.getElementById("viewRequestsBtn");
-const requestsSection = document.getElementById("requestsSection");
 
 function checkAccess() {
   const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -72,6 +70,7 @@ function hasAlreadyRequested(item) {
 }
 
 function renderFoodItems(items) {
+  if (!foodGrid) return;
   foodGrid.innerHTML = "";
 
   if (items.length === 0) {
@@ -110,6 +109,7 @@ function renderFoodItems(items) {
 }
 
 function renderRequestHistory() {
+  if (!historyList) return;
   const requests = getRequests();
   const userEmail = localStorage.getItem("userEmail");
 
@@ -141,9 +141,9 @@ function renderRequestHistory() {
 
 function filterFood() {
   loadFood()
-  const searchValue = searchInput.value.toLowerCase().trim();
-  const selectedType = typeFilter.value.toLowerCase();
-  const selectedCategory = categoryFilter.value.toLowerCase();
+  const searchValue = searchInput ? searchInput.value.toLowerCase().trim() : "";
+  const selectedType = typeFilter ? typeFilter.value.toLowerCase() : "all";
+  const selectedCategory = categoryFilter ? categoryFilter.value.toLowerCase() : "all";
 
   const filtered = availableFood.filter((item) => {
     const matchesSearch =
@@ -171,22 +171,7 @@ function requestFood(id) {
   const userEmail = localStorage.getItem("userEmail");
   const requests = getRequests();
 
-  item.quantity -= 1;
-
-  requests.push({
-    id: Date.now(),
-    userEmail,
-    name: item.name,
-    restaurant: item.restaurant,
-    category: item.category,
-    requestedAt: new Date().toLocaleString()
-  });
-
-  saveRequests(requests);
-  renderFoodItems(availableFood);
-  renderRequestHistory();
-}
-  if (alreadyRequested) {
+  if (hasAlreadyRequested(item)) {
     alert("You already requested one portion of this food item.");
     return;
   }
@@ -226,7 +211,6 @@ function requestFood(id) {
   saveRequests(requests);
   renderFoodItems(availableFood);
   renderRequestHistory();
-
   alert("Food requested successfully ✔");
 }
 
@@ -234,25 +218,22 @@ function logout() {
   localStorage.removeItem("isLoggedIn");
   localStorage.removeItem("userRole");
   localStorage.removeItem("userEmail");
+  localStorage.removeItem("currentUser");
   window.location.href = "index.html";
 }
+
 window.goToProfile = function() {
   console.log("Navigating to profile...");
   window.location.href = "profile.html";
 }
-searchInput.addEventListener("input", filterFood);
-typeFilter.addEventListener("change", filterFood);
-categoryFilter.addEventListener("change", filterFood);
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", logout);
-}
 
+if (searchInput) searchInput.addEventListener("input", filterFood);
+if (typeFilter) typeFilter.addEventListener("change", filterFood);
+if (categoryFilter) categoryFilter.addEventListener("change", filterFood);
+if (logoutBtn) logoutBtn.addEventListener("click", logout);
 
 window.requestFood = requestFood;
 
-// checkAccess();
-// renderFoodItems(availableFood);
-// renderRequestHistory();
 checkAccess();
 
 // Attempt to load from server first

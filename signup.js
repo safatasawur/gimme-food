@@ -86,7 +86,8 @@ function login() {
         console.warn('Server login failed with status', resp.status);
       }
     } catch (err) {
-      console.warn('Login server error, falling back to localStorage', err);
+      console.error('Login fetch failed:', err);
+      showMessage("Login server error, falling back to offline mode.");
     }
 
     // Fallback to localStorage
