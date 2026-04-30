@@ -83,7 +83,10 @@ function login() {
         }
         return;
       } else {
-        console.warn('Server login failed with status', resp.status);
+        const errorData = await resp.json().catch(() => ({}));
+        console.warn('Server login failed:', errorData.error || resp.status);
+        showMessage("Server Login Failed: " + (errorData.error || "Invalid Credentials"));
+        return; // Don't fall back to offline if the server actively rejected us
       }
     } catch (err) {
       console.error('Login fetch failed:', err);
@@ -191,8 +194,10 @@ async function signup() {
       toggleForm("login");
       return;
     } else {
-      // Server responded but with an error; fall back to local
-      console.warn('Server signup failed', resp.status);
+      const errorData = await resp.json().catch(() => ({}));
+      console.warn('Server signup failed', errorData.error || resp.status);
+      showMessage("Server Signup Failed: " + (errorData.error || "Email already in use or missing info"));
+      return; // Don't fall back to offline if the server rejected it
     }
   } catch (err) {
     // Network/server unreachable - fallback
