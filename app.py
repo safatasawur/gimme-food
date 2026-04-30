@@ -64,6 +64,11 @@ def init_db():
                   UNIQUE KEY `email_UNIQUE` (`email`)
                 )
             """)
+            # Force AUTO_INCREMENT if missing
+            try:
+                cursor.execute("ALTER TABLE `user` MODIFY `user_id` INT NOT NULL AUTO_INCREMENT")
+            except: pass
+
             # Seller table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS `seller` (
@@ -77,6 +82,11 @@ def init_db():
                   UNIQUE KEY `email_UNIQUE` (`email`)
                 )
             """)
+            # Force AUTO_INCREMENT for seller_id
+            try:
+                cursor.execute("ALTER TABLE `seller` MODIFY `seller_id` INT NOT NULL AUTO_INCREMENT")
+            except: pass
+
             # Check and add missing columns for seller table
             cursor.execute("SHOW COLUMNS FROM `seller` LIKE 'restaurant_name'")
             if not cursor.fetchone():
