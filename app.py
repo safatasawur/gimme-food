@@ -64,7 +64,7 @@ def init_db():
                   UNIQUE KEY `email_UNIQUE` (`email`)
                 )
             """)
-            # Seller table (with all columns)
+            # Seller table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS `seller` (
                   `seller_id` INT NOT NULL AUTO_INCREMENT,
@@ -72,18 +72,26 @@ def init_db():
                   `email` VARCHAR(255) NOT NULL,
                   `password` VARCHAR(255) NOT NULL,
                   `seller_city` VARCHAR(64) NOT NULL,
-                  `restaurant_name` VARCHAR(128),
-                  `restaurant_address` VARCHAR(255),
                   `create_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
                   PRIMARY KEY (`seller_id`),
                   UNIQUE KEY `email_UNIQUE` (`email`)
                 )
             """)
-            # Ensure columns exist if table was old
-            try:
-                cursor.execute("ALTER TABLE seller ADD COLUMN IF NOT EXISTS restaurant_name VARCHAR(128)")
-                cursor.execute("ALTER TABLE seller ADD COLUMN IF NOT EXISTS restaurant_address VARCHAR(255)")
-            except: pass
+            # Check and add missing columns for seller table
+            cursor.execute("SHOW COLUMNS FROM `seller` LIKE 'restaurant_name'")
+            if not cursor.fetchone():
+                print("DEBUG: Adding restaurant_name column to seller table...")
+                cursor.execute("ALTER TABLE `seller` ADD COLUMN `restaurant_name` VARCHAR(128)")
+            
+            cursor.execute("SHOW COLUMNS FROM `seller` LIKE 'restaurant_address'")
+            if not cursor.fetchone():
+                print("DEBUG: Adding restaurant_address column to seller table...")
+                cursor.execute("ALTER TABLE `seller` ADD COLUMN `restaurant_address` VARCHAR(255)")
+
+            cursor.execute("SHOW COLUMNS FROM `seller` LIKE 'seller_city'")
+            if not cursor.fetchone():
+                print("DEBUG: Adding seller_city column to seller table...")
+                cursor.execute("ALTER TABLE `seller` ADD COLUMN `seller_city` VARCHAR(64) DEFAULT 'Unknown'")
             
             # Menu Items table
             cursor.execute("""
