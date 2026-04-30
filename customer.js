@@ -236,7 +236,8 @@ function logout() {
   localStorage.removeItem("userEmail");
   window.location.href = "index.html";
 }
-function goToProfile() {
+window.goToProfile = function() {
+  console.log("Navigating to profile...");
   window.location.href = "profile.html";
 }
 searchInput.addEventListener("input", filterFood);

@@ -63,6 +63,18 @@ function login() {
         localStorage.setItem("userRole", role);
         localStorage.setItem("userEmail", email);
         localStorage.setItem("currentUser", JSON.stringify(data.user || {}));
+        
+        // Save fields for profile page
+        const user = data.user || {};
+        localStorage.setItem("savedName", user.username || "");
+        localStorage.setItem("savedEmail", user.email || email);
+        localStorage.setItem("savedAddress", user.restaurant_address || user.user_city || "");
+        localStorage.setItem("savedRole", role);
+        
+        if (role === "owner") {
+          localStorage.setItem("restaurantName", user.restaurant_name || "");
+          localStorage.setItem("restaurantAddress", user.restaurant_address || "");
+        }
         showMessage(role + " logged in successfully ✔ (online)");
         if (role === "owner") {
           window.location.href = "owner.html";
@@ -155,7 +167,15 @@ async function signup() {
 
   // Try to register on server first; if it fails, fall back to localStorage
   try {
-    const payload = { username: name, email: email, password: password };
+    const payload = { 
+      username: name, 
+      email: email, 
+      password: password,
+      city: city,
+      role: currentRole,
+      restaurantName: restaurantName,
+      restaurantAddress: restaurantAddress
+    };
     const resp = await fetch(window.API_BASE_URL + '/api/signup-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

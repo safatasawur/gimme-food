@@ -175,18 +175,15 @@ def login():
     
     try:
         with conn.cursor() as cursor:
-            query = "SELECT * FROM user WHERE email = %s AND password = %s"
-            cursor.execute(query, (data['email'], data['password']))
+            # Check users
+            cursor.execute("SELECT * FROM user WHERE email = %s AND password = %s", (data['email'], data['password']))
             user = cursor.fetchone()
-            
             if user:
                 return jsonify({"message": "Login successful", "role": "customer", "user": user})
             
-            # Check sellers if not found in users
-            query = "SELECT * FROM seller WHERE email = %s AND password = %s"
-            cursor.execute(query, (data['email'], data['password']))
+            # Check sellers
+            cursor.execute("SELECT * FROM seller WHERE email = %s AND password = %s", (data['email'], data['password']))
             seller = cursor.fetchone()
-            
             if seller:
                 return jsonify({"message": "Login successful", "role": "owner", "user": seller})
             

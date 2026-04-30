@@ -285,3 +285,23 @@ filterButtons.forEach((button) => {
 
 renderFoodItems(foodItems);
 window.openModal = openModal;
+
+function checkAccess() {
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+  const userRole = localStorage.getItem("userRole");
+
+  if (isLoggedIn !== "true" || userRole !== "owner") {
+    window.location.href = "index.html";
+  }
+}
+
+function logout() {
+  localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("currentUser");
+  window.location.href = "index.html";
+}
+
+checkAccess();
+syncInventoryWithServer();
