@@ -232,3 +232,85 @@ def request_food():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+
+
+
+
+@app.route('/request-food', methods=['POST'])
+def request_food():
+    data = request.json
+
+    customer_id = data['customer_id']
+    owner_id = data['owner_id']
+    food_id = data['food_id']
+
+    cursor.execute("""
+        INSERT INTO requests (food_id, customer_id, owner_id, status)
+        VALUES (%s,%s,%s,'pending')
+    """, (food_id, customer_id, owner_id))
+
+    cursor.execute("""
+        INSERT INTO notifications (user_id, message)
+        VALUES (%s,%s)
+    """, (owner_id, "New food request received"))
+
+    conn.commit()
+
+    return jsonify({"success": True})
+
+@app.route('/approve-request/<int:id>', methods=['POST'])
+def approve_request(id):
+
+    cursor.execute("""
+        UPDATE requests SET status='approved'
+        WHERE id=%s
+    """, (id,))
+
+    cursor.execute("""
+        SELECT customer_id FROM requests WHERE id=%s
+    """, (id,))
+    customer = cursor.fetchone()
+
+    cursor.execute("""
+        INSERT INTO notifications (user_id, message)
+        VALUES (%s,%s)
+    """, (customer[0], "Your request was approved"))
+    
+    conn.commit()
+
+    return jsonify({"success": True})
+
+@app.route('/decline-request/<int:id>', methods=['POST'])
+def decline_request(id):
+
+    cursor.execute("""
+        UPDATE requests SET status='declined'
+        WHERE id=%s
+    """, (id,))
+
+    cursor.execute("""
+        SELECT customer_id FROM requests WHERE id=%s
+    """, (id,))
+    customer = cursor.fetchone()
+
+    cursor.execute("""
+        INSERT INTO notifications (user_id, message)
+        VALUES (%s,%s)
+    """, (customer[0], "Your request was declined"))
+    
+    conn.commit()
+
+    return jsonify({"success": True})
+
+@app.route('/notifications/<int:user_id>')
+def notifications(user_id):
+
+    cursor.execute("""
+        SELECT * FROM notifications
+        WHERE user_id=%s
+        ORDER BY created_at DESC
+    """, (user_id,))
+
+    rows = cursor.fetchall()
+
+    return jsonify(rows)
