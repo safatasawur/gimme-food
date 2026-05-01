@@ -32,7 +32,22 @@ CREATE TABLE IF NOT EXISTS `gimme_food`.`user` (
   PRIMARY KEY (`user_id`),
   UNIQUE INDEX `user_id_UNIQUE` (`user_id` ASC) VISIBLE);
 
+CREATE TABLE requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    food_id INT,
+    customer_id INT,
+    owner_id INT,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    message TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 -- -----------------------------------------------------
 -- Table `gimme_food`.`seller`
 -- -----------------------------------------------------
