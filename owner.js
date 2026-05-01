@@ -1,311 +1,249 @@
-class FoodItem {
-  constructor(id, restaurant, name, category, ingredients, expiryDate, type, quantity) {
-    this.id = id;
-    this.restaurant = restaurant;
-    this.name = name;
-    this.category = category;
-    this.ingredients = ingredients;
-    this.expiryDate = expiryDate;
-    this.type = type;
-    this.quantity = quantity;
-  }
-}
-
-const defaultFoodItems = [
-  new FoodItem(
-    1,
-    "Green Bowl",
-    "Chicken Biryani",
-    "Meal",
-    ["Rice", "Chicken", "Spices", "Yogurt"],
-    "2026-03-30",
-    "discount",
-    3
-  ),
-  new FoodItem(
-    2,
-    "Bake House",
-    "Vegetable Sandwich",
-    "Bakery",
-    ["Bread", "Tomato", "Lettuce", "Cheese"],
-    "2026-03-29",
-    "free",
-    2
-  ),
-  new FoodItem(
-    3,
-    "Cafe Bliss",
-    "Iced Coffee",
-    "Beverage",
-    ["Milk", "Coffee", "Sugar", "Ice"],
-    "2026-03-30",
-    "beverage",
-    4
-  ),
-  new FoodItem(
-    4,
-    "Pasta Point",
-    "Pasta Alfredo",
-    "Meal",
-    ["Pasta", "Cream", "Cheese", "Herbs"],
-    "2026-03-31",
-    "meal",
-    1
-  ),
-  new FoodItem(
-    5,
-    "Bake House",
-    "Chocolate Muffin",
-    "Bakery",
-    ["Flour", "Cocoa", "Eggs", "Sugar"],
-    "2026-03-30",
-    "bakery",
-    5
-  ),
-  new FoodItem(
-    6,
-    "Fresh Sip",
-    "Fruit Juice",
-    "Beverage",
-    ["Orange", "Apple", "Mango"],
-    "2026-03-29",
-    "discount",
-    2
-  )
-];
-
-function getFoodItems() {
-  const saved = JSON.parse(localStorage.getItem("foodItems"));
-  if (saved && Array.isArray(saved)) {
-    return saved;
-  }
-
-  localStorage.setItem("foodItems", JSON.stringify(defaultFoodItems));
-  return defaultFoodItems;
-}
-
-// Try to sync local inventory with server if available
-async function syncInventoryWithServer() {
-  try {
-    const resp = await fetch(window.API_BASE_URL + '/api/food');
-    if (!resp.ok) return;
-    const data = await resp.json();
-    if (Array.isArray(data) && data.length) {
-      localStorage.setItem('foodItems', JSON.stringify(data));
-      foodItems = data;
-      renderFoodItems(foodItems);
-    }
-  } catch (err) {
-    console.warn('Could not sync inventory with server', err);
-  }
-}
-
-function saveFoodItems(items) {
-  localStorage.setItem("foodItems", JSON.stringify(items));
-}
-
-let foodItems = getFoodItems();
+const API = window.API_BASE_URL;
 
 const inventoryGrid = document.getElementById("inventoryGrid");
-const filterButtons = document.querySelectorAll(".filter-btn");
+const requestList = document.getElementById("requestList");
+const notificationList = document.getElementById("notificationList");
+const foodForm = document.getElementById("foodForm");
 
-const modal = document.getElementById("detailModal");
-const closeModal = document.getElementById("closeModal");
-
-const modalName = document.getElementById("modalName");
-const modalCategory = document.getElementById("modalCategory");
-const modalType = document.getElementById("modalType");
-const modalExpiry = document.getElementById("modalExpiry");
-const modalIngredients = document.getElementById("modalIngredients");
-
-const addItemBtn = document.getElementById("addItemBtn");
-const addItemModal = document.getElementById("addItemModal");
-const closeAddModal = document.getElementById("closeAddModal");
-const addItemForm = document.getElementById("addItemForm");
-
-function getBadgeClass(type) {
-  if (type === "discount") return "badge-discount";
-  if (type === "free") return "badge-free";
-  return "badge-regular";
-}
-
-function getBadgeLabel(type) {
-  if (type === "discount") return "Discount";
-  if (type === "free") return "Free Food";
-  return type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-function renderFoodItems(items) {
-  inventoryGrid.innerHTML = "";
-
-  if (items.length === 0) {
-    inventoryGrid.innerHTML = `<p>No food items found.</p>`;
-    return;
-  }
-
-  items.forEach((item) => {
-    const card = document.createElement("div");
-    card.classList.add("food-card");
-
-    card.innerHTML = `
-      <div class="food-header">
-        <div class="food-title">${item.name}</div>
-        <span class="food-badge ${getBadgeClass(item.type)}">${getBadgeLabel(item.type)}</span>
-      </div>
-
-      <div class="food-details">
-        <p><strong>Restaurant:</strong> ${item.restaurant || "-"}</p>
-        <p><strong>Category:</strong> ${item.category}</p>
-        <p><strong>Expiry:</strong> ${item.expiryDate}</p>
-        <p><strong>Quantity:</strong> ${item.quantity ?? 1}</p>
-      </div>
-
-      <div class="card-actions">
-        <button class="detail-btn" onclick="openModal(${item.id})">See Detail</button>
-      </div>
-    `;
-
-    inventoryGrid.appendChild(card);
-  });
-}
-
-function openModal(id) {
-  const item = foodItems.find((food) => food.id === id);
-  if (!item) return;
-
-  modalName.textContent = item.name;
-  modalCategory.textContent = item.category;
-  modalType.textContent = getBadgeLabel(item.type);
-  modalExpiry.textContent = item.expiryDate;
-  modalIngredients.textContent = Array.isArray(item.ingredients)
-    ? item.ingredients.join(", ")
-    : item.ingredients;
-
-  modal.classList.remove("hidden");
-}
-
-function closeDetailModal() {
-  modal.classList.add("hidden");
-}
-
-function openAddItemModal() {
-  addItemModal.classList.remove("hidden");
-}
-
-function closeAddItemModal() {
-  addItemModal.classList.add("hidden");
-  addItemForm.reset();
-}
-
-addItemForm.addEventListener("submit", function (e) {
-  e.preventDefault();
-
-  foodItems = getFoodItems();
-
-  const newItem = {
-    id: Date.now(),
-    restaurant: localStorage.getItem("restaurantName") || "My Restaurant",
-    name: document.getElementById("foodName").value.trim(),
-    category: document.getElementById("foodCategory").value,
-    ingredients: document.getElementById("foodIngredients").value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-    expiryDate: document.getElementById("foodExpiry").value,
-    type: document.getElementById("foodType").value,
-    quantity: 1
-  };
-
-  foodItems.push(newItem);
-  saveFoodItems(foodItems);
-
-  // Sync with server
-  (async function() {
-    try {
-      const resp = await fetch(window.API_BASE_URL + '/api/food', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          restaurant: newItem.restaurant,
-          name: newItem.name,
-          category: newItem.category,
-          ingredients: newItem.ingredients,
-          expiryDate: newItem.expiryDate,
-          type: newItem.type,
-          quantity: newItem.quantity
-        })
-      });
-      if (!resp.ok) {
-        console.warn('Server add-food responded with', resp.status);
-      }
-    } catch (err) {
-      console.warn('Network error adding food to server', err);
-    }
-  })();
-
-  closeAddItemModal();
-  renderFoodItems(foodItems);
-  alert("Item added successfully ✔");
-});
-
-closeModal.addEventListener("click", closeDetailModal);
-addItemBtn.addEventListener("click", openAddItemModal);
-closeAddModal.addEventListener("click", closeAddItemModal);
-
-window.addEventListener("click", (e) => {
-  if (e.target === modal) closeDetailModal();
-  if (e.target === addItemModal) closeAddItemModal();
-});
-
-filterButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const activeButton = document.querySelector(".filter-btn.active");
-    if (activeButton) activeButton.classList.remove("active");
-
-    button.classList.add("active");
-    const filter = button.dataset.filter;
-
-    foodItems = getFoodItems();
-
-    if (filter === "all") {
-      renderFoodItems(foodItems);
-      return;
-    }
-
-    const filteredItems = foodItems.filter((item) => {
-      return (
-        item.type.toLowerCase() === filter.toLowerCase() ||
-        item.category.toLowerCase() === filter.toLowerCase()
-      );
-    });
-
-    renderFoodItems(filteredItems);
-  });
-});
-
-renderFoodItems(foodItems);
-window.openModal = openModal;
 
 function checkAccess() {
   const isLoggedIn = localStorage.getItem("isLoggedIn");
-  const userRole = localStorage.getItem("userRole");
+  const role = localStorage.getItem("userRole");
 
-  if (isLoggedIn !== "true" || userRole !== "owner") {
+  if (isLoggedIn !== "true" || role !== "owner") {
     window.location.href = "index.html";
   }
 }
 
+
+function getOwnerId() {
+  return localStorage.getItem("user_id");
+}
+
+
 function logout() {
-  localStorage.removeItem("isLoggedIn");
-  localStorage.removeItem("userRole");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("currentUser");
+  localStorage.clear();
   window.location.href = "index.html";
 }
 
-checkAccess();
-syncInventoryWithServer();
 
-fetch('/owner-requests')
-fetch('/approve-request/3',{method:'POST'})
-fetch('/decline-request/3',{method:'POST'})
+function scrollToSection(id) {
+  document.getElementById(id).scrollIntoView({
+    behavior: "smooth"
+  });
+}
+
+
+function badgeClass(type) {
+  if (type === "discount") return "discount";
+  if (type === "free") return "free";
+  return "regular";
+}
+
+
+async function loadInventory() {
+
+  try {
+    const res = await fetch(API + "/api/food");
+    const rows = await res.json();
+
+    const ownerId = getOwnerId();
+
+    const mine = rows.filter(x => Number(x.owner_id) === Number(ownerId));
+
+    inventoryGrid.innerHTML = "";
+
+    if (!mine.length) {
+      inventoryGrid.innerHTML = "<p>No food items yet.</p>";
+      return;
+    }
+
+    mine.forEach(item => {
+
+      inventoryGrid.innerHTML += `
+        <div class="card">
+          <span class="badge ${badgeClass(item.type)}">${item.type}</span>
+          <h3>${item.name}</h3>
+          <p><strong>Restaurant:</strong> ${item.restaurant}</p>
+          <p><strong>Category:</strong> ${item.category}</p>
+          <p><strong>Expiry:</strong> ${item.expiry_date || item.expiryDate}</p>
+          <p><strong>Quantity:</strong> ${item.quantity}</p>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    inventoryGrid.innerHTML = "<p>Could not load inventory.</p>";
+  }
+}
+
+
+foodForm.addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const ownerId = getOwnerId();
+
+  const data = {
+    owner_id: ownerId,
+    restaurant: localStorage.getItem("restaurantName") || "My Restaurant",
+    name: document.getElementById("foodName").value,
+    category: document.getElementById("foodCategory").value,
+    ingredients: document.getElementById("foodIngredients").value.split(","),
+    expiryDate: document.getElementById("foodExpiry").value,
+    type: document.getElementById("foodType").value,
+    quantity: document.getElementById("foodQty").value
+  };
+
+  try {
+
+    const res = await fetch(API + "/api/food", {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify(data)
+    });
+
+    const result = await res.json();
+
+    alert(result.message || "Added");
+
+    foodForm.reset();
+    loadInventory();
+
+  } catch (err) {
+    alert("Could not add item");
+  }
+});
+
+
+async function loadRequests() {
+
+  const ownerId = getOwnerId();
+
+  try {
+
+    const res = await fetch(API + "/api/owner-requests/" + ownerId);
+    const rows = await res.json();
+
+    requestList.innerHTML = "";
+
+    const pending = rows.filter(x => x.status === "pending");
+
+    if (!pending.length) {
+      requestList.innerHTML = "<p>No pending requests.</p>";
+      return;
+    }
+
+    pending.forEach(req => {
+
+      requestList.innerHTML += `
+        <div class="list-item">
+          <p><strong>Request ID:</strong> ${req.id}</p>
+          <p><strong>Food ID:</strong> ${req.food_id}</p>
+          <p><strong>Customer ID:</strong> ${req.customer_id}</p>
+          <p><strong>Date:</strong> ${req.created_at}</p>
+
+          <div class="row">
+            <button class="btn green" onclick="approveRequest(${req.id})">Approve</button>
+            <button class="btn red" onclick="declineRequest(${req.id})">Decline</button>
+          </div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    requestList.innerHTML = "<p>Could not load requests.</p>";
+  }
+}
+
+
+async function approveRequest(id) {
+
+  try {
+
+    const res = await fetch(API + "/api/approve-request/" + id, {
+      method:"POST"
+    });
+
+    const data = await res.json();
+
+    alert(data.message || "Approved");
+
+    loadRequests();
+    loadInventory();
+    loadNotifications();
+
+  } catch (err) {
+    alert("Could not approve");
+  }
+}
+
+
+async function declineRequest(id) {
+
+  try {
+
+    const res = await fetch(API + "/api/decline-request/" + id, {
+      method:"POST"
+    });
+
+    const data = await res.json();
+
+    alert(data.message || "Declined");
+
+    loadRequests();
+    loadNotifications();
+
+  } catch (err) {
+    alert("Could not decline");
+  }
+}
+
+
+async function loadNotifications() {
+
+  const ownerId = getOwnerId();
+
+  try {
+
+    const res = await fetch(API + "/api/notifications/" + ownerId);
+    const rows = await res.json();
+
+    notificationList.innerHTML = "";
+
+    if (!rows.length) {
+      notificationList.innerHTML = "<p>No notifications.</p>";
+      return;
+    }
+
+    rows.forEach(n => {
+
+      notificationList.innerHTML += `
+        <div class="list-item">
+          <p>${n.message}</p>
+          <p class="small">${n.created_at}</p>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    notificationList.innerHTML = "<p>Could not load notifications.</p>";
+  }
+}
+
+
+window.logout = logout;
+window.scrollToSection = scrollToSection;
+window.approveRequest = approveRequest;
+window.declineRequest = declineRequest;
+
+checkAccess();
+
+loadInventory();
+loadRequests();
+loadNotifications();
+
+setInterval(loadRequests, 5000);
+setInterval(loadNotifications, 5000);
+setInterval(loadInventory, 5000);
