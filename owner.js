@@ -305,3 +305,7 @@ function logout() {
 
 checkAccess();
 syncInventoryWithServer();
+
+fetch('/owner-requests')
+fetch('/approve-request/3',{method:'POST'})
+fetch('/decline-request/3',{method:'POST'})
