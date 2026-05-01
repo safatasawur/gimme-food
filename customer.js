@@ -1,88 +1,109 @@
-const API = window.API_BASE_URL;
-
 let availableFood = [];
+
+function loadFood() {
+  availableFood = JSON.parse(localStorage.getItem("foodItems")) || [];
+}
+
+// Try to load food from server and fall back to localStorage
+async function loadFoodFromServer() {
+  try {
+    const resp = await fetch(window.API_BASE_URL + "/api/food");
+    if (!resp.ok) throw new Error("Bad response");
+
+    const data = await resp.json();
+
+    if (Array.isArray(data) && data.length) {
+      availableFood = data;
+      localStorage.setItem("foodItems", JSON.stringify(availableFood));
+      renderFoodItems(availableFood);
+      return;
+    }
+  } catch (err) {
+    console.warn("Could not load food from server, using localStorage", err);
+    loadFood();
+  }
+}
 
 const foodGrid = document.getElementById("foodGrid");
 const historyList = document.getElementById("historyList");
-const notificationList = document.getElementById("notificationList");
-
 const searchInput = document.getElementById("searchInput");
 const typeFilter = document.getElementById("typeFilter");
 const categoryFilter = document.getElementById("categoryFilter");
-
+const logoutBtn = document.getElementById("logoutBtn");
 
 function checkAccess() {
   const isLoggedIn = localStorage.getItem("isLoggedIn");
-  const role = localStorage.getItem("userRole");
+  const userRole = localStorage.getItem("userRole");
 
-  if (isLoggedIn !== "true" || role !== "customer") {
+  if (isLoggedIn !== "true" || userRole !== "customer") {
     window.location.href = "index.html";
   }
 }
 
-
-function getUserId() {
-  return localStorage.getItem("user_id");
+function getBadgeClass(type) {
+  if (type === "discount") return "badge-discount";
+  if (type === "free") return "badge-free";
+  return "badge-regular";
 }
 
-
-function logout() {
-  localStorage.clear();
-  window.location.href = "index.html";
+function getBadgeLabel(type) {
+  if (type === "discount") return "Discount";
+  if (type === "free") return "Free Food";
+  return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-
-function scrollToSection(id) {
-  document.getElementById(id).scrollIntoView({
-    behavior: "smooth"
-  });
+function getRequests() {
+  return JSON.parse(localStorage.getItem("customerRequests")) || [];
 }
 
-
-function badgeClass(type) {
-  if (type === "discount") return "discount";
-  if (type === "free") return "free";
-  return "regular";
+function saveRequests(requests) {
+  localStorage.setItem("customerRequests", JSON.stringify(requests));
 }
 
+function hasAlreadyRequested(item) {
+  const requests = getRequests();
+  const userEmail = localStorage.getItem("userEmail");
 
-async function loadFood() {
-  try {
-    const res = await fetch(API + "/api/food");
-    availableFood = await res.json();
-    renderFood(availableFood);
-  } catch (err) {
-    console.log(err);
-  }
+  return requests.some(
+    (request) =>
+      request.userEmail === userEmail &&
+      request.restaurant === item.restaurant &&
+      request.name === item.name
+  );
 }
 
-
-function renderFood(items) {
+function renderFoodItems(items) {
+  if (!foodGrid) return;
 
   foodGrid.innerHTML = "";
 
-  if (!items.length) {
-    foodGrid.innerHTML = "<p>No food found.</p>";
+  if (items.length === 0) {
+    foodGrid.innerHTML = `<p class="empty-text">No food items match your filters.</p>`;
     return;
   }
 
-  items.forEach(item => {
+  items.forEach((item) => {
+    const alreadyRequested = hasAlreadyRequested(item);
 
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "food-card";
 
     card.innerHTML = `
-      <span class="badge ${badgeClass(item.type)}">${item.type}</span>
+      <span class="badge ${getBadgeClass(item.type)}">${getBadgeLabel(item.type)}</span>
       <h3>${item.name}</h3>
       <p><strong>Restaurant:</strong> ${item.restaurant}</p>
       <p><strong>Category:</strong> ${item.category}</p>
-      <p><strong>Expiry:</strong> ${item.expiry_date || item.expiryDate}</p>
-      <p><strong>Available:</strong> ${item.quantity}</p>
-
-      <button class="btn"
-        onclick="requestFood(${item.id}, ${item.owner_id})"
-        ${item.quantity < 1 ? "disabled" : ""}>
-        ${item.quantity < 1 ? "Unavailable" : "Request Food"}
+      <p><strong>Expiry:</strong> ${item.expiryDate}</p>
+      <p><strong>Available Portions:</strong> ${item.quantity}</p>
+      <button class="request-btn" onclick="requestFood(${item.id})"
+        ${alreadyRequested || item.quantity < 1 ? "disabled" : ""}>
+        ${
+          alreadyRequested
+            ? "Already Requested"
+            : item.quantity < 1
+            ? "Not Available"
+            : "Request One Portion"
+        }
       </button>
     `;
 
@@ -90,144 +111,162 @@ function renderFood(items) {
   });
 }
 
+function renderRequestHistory() {
+  if (!historyList) return;
+
+  const requests = getRequests();
+  const userEmail = localStorage.getItem("userEmail");
+
+  const myRequests = requests.filter(
+    (request) => request.userEmail === userEmail
+  );
+
+  historyList.innerHTML = "";
+
+  if (myRequests.length === 0) {
+    historyList.innerHTML = `<p class="empty-text">You have not requested any food yet.</p>`;
+    return;
+  }
+
+  myRequests.forEach((request) => {
+    const item = document.createElement("div");
+    item.className = "history-item";
+
+    item.innerHTML = `
+      <p><strong>Food:</strong> ${request.name}</p>
+      <p><strong>Restaurant:</strong> ${request.restaurant}</p>
+      <p><strong>Category:</strong> ${request.category}</p>
+      <p><strong>Requested On:</strong> ${request.requestedAt}</p>
+    `;
+
+    historyList.appendChild(item);
+  });
+}
 
 function filterFood() {
+  loadFood();
 
-  const search = searchInput.value.toLowerCase();
-  const type = typeFilter.value.toLowerCase();
-  const category = categoryFilter.value.toLowerCase();
+  const searchValue = searchInput
+    ? searchInput.value.toLowerCase().trim()
+    : "";
 
-  const filtered = availableFood.filter(item => {
+  const selectedType = typeFilter ? typeFilter.value.toLowerCase() : "all";
+  const selectedCategory = categoryFilter
+    ? categoryFilter.value.toLowerCase()
+    : "all";
 
-    const a =
-      item.name.toLowerCase().includes(search) ||
-      item.restaurant.toLowerCase().includes(search);
+  const filtered = availableFood.filter((item) => {
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchValue) ||
+      item.restaurant.toLowerCase().includes(searchValue);
 
-    const b =
-      type === "all" ||
-      item.type.toLowerCase() === type;
+    const matchesType =
+      selectedType === "all" || item.type.toLowerCase() === selectedType;
 
-    const c =
-      category === "all" ||
-      item.category.toLowerCase() === category;
+    const matchesCategory =
+      selectedCategory === "all" ||
+      item.category.toLowerCase() === selectedCategory;
 
-    return a && b && c;
+    return matchesSearch && matchesType && matchesCategory;
   });
 
-  renderFood(filtered);
+  renderFoodItems(filtered);
 }
 
+function requestFood(id) {
+  loadFood();
 
-async function requestFood(foodId, ownerId) {
+  const item = availableFood.find((food) => food.id === id);
+  if (!item) return;
 
-  const customerId = getUserId();
+  const userEmail = localStorage.getItem("userEmail");
+  const requests = getRequests();
 
-  try {
-
-    const res = await fetch(API + "/api/request-food", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        food_id: foodId,
-        customer_id: customerId,
-        owner_id: ownerId
-      })
-    });
-
-    const data = await res.json();
-
-    alert(data.message || "Request sent");
-
-    loadFood();
-    loadHistory();
-    loadNotifications();
-
-  } catch (err) {
-    alert("Request failed");
+  if (hasAlreadyRequested(item)) {
+    alert("You already requested one portion of this food item.");
+    return;
   }
-}
 
+  if (item.quantity < 1) {
+    alert("This item is no longer available.");
+    return;
+  }
 
-async function loadHistory() {
+  item.quantity -= 1;
 
-  const customerId = getUserId();
+  requests.push({
+    id: Date.now(),
+    userEmail: userEmail,
+    name: item.name,
+    restaurant: item.restaurant,
+    category: item.category,
+    requestedAt: new Date().toLocaleString(),
+  });
 
-  try {
+  (async function () {
+    try {
+      const resp = await fetch(
+        window.API_BASE_URL + "/api/request-food",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: userEmail,
+            item_id: item.id,
+          }),
+        }
+      );
 
-    const res = await fetch(API + "/api/owner-requests/" + customerId);
-    const rows = await res.json();
-
-    historyList.innerHTML = "";
-
-    const mine = rows.filter(x => Number(x.customer_id) === Number(customerId));
-
-    if (!mine.length) {
-      historyList.innerHTML = "<p>No requests yet.</p>";
-      return;
+      if (!resp.ok) {
+        console.warn("Server request-food responded with", resp.status);
+      }
+    } catch (err) {
+      console.warn("Network error sending request to server", err);
     }
+  })();
 
-    mine.forEach(item => {
+  saveRequests(requests);
+  renderFoodItems(availableFood);
+  renderRequestHistory();
 
-      historyList.innerHTML += `
-        <div class="list-item">
-          <p><strong>Food ID:</strong> ${item.food_id}</p>
-          <p><strong>Status:</strong> ${item.status}</p>
-          <p><strong>Date:</strong> ${item.created_at}</p>
-        </div>
-      `;
-    });
-
-  } catch (err) {
-    historyList.innerHTML = "<p>Could not load requests.</p>";
-  }
+  alert("Food requested successfully ✔");
 }
 
+function logout() {
+  localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("currentUser");
 
-async function loadNotifications() {
-
-  const userId = getUserId();
-
-  try {
-
-    const res = await fetch(API + "/api/notifications/" + userId);
-    const rows = await res.json();
-
-    notificationList.innerHTML = "";
-
-    if (!rows.length) {
-      notificationList.innerHTML = "<p>No notifications.</p>";
-      return;
-    }
-
-    rows.forEach(n => {
-      notificationList.innerHTML += `
-        <div class="list-item">
-          <p>${n.message}</p>
-          <p class="small">${n.created_at}</p>
-        </div>
-      `;
-    });
-
-  } catch (err) {
-    notificationList.innerHTML = "<p>Could not load notifications.</p>";
-  }
+  window.location.href = "index.html";
 }
 
+window.goToProfile = function () {
+  console.log("Navigating to profile...");
+  window.location.href = "profile.html";
+};
 
-searchInput.addEventListener("input", filterFood);
-typeFilter.addEventListener("change", filterFood);
-categoryFilter.addEventListener("change", filterFood);
+if (searchInput) searchInput.addEventListener("input", filterFood);
+if (typeFilter) typeFilter.addEventListener("change", filterFood);
+if (categoryFilter) categoryFilter.addEventListener("change", filterFood);
+if (logoutBtn) logoutBtn.addEventListener("click", logout);
 
 window.requestFood = requestFood;
-window.logout = logout;
-window.scrollToSection = scrollToSection;
 
 checkAccess();
-loadFood();
-loadHistory();
-loadNotifications();
 
-setInterval(loadNotifications, 5000);
-setInterval(loadFood, 5000);
+// Attempt to load from server first
+loadFoodFromServer().then(() => {
+  filterFood();
+  renderRequestHistory();
+});
+
+fetch("/request-food", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    customer_id: 1,
+    owner_id: 2,
+    food_id: 5,
+  }),
+});
