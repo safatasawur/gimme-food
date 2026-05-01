@@ -241,3 +241,13 @@ loadFoodFromServer().then(() => {
   filterFood();
   renderRequestHistory();
 });
+
+fetch('/request-food', {
+  method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({
+      customer_id:1,
+      owner_id:2,
+      food_id:5
+  })
+})
