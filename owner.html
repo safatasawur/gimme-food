@@ -338,17 +338,29 @@ body {
 <header class="topbar">
   <div class="logo">FoodSaver</div>
 
-  <nav class="nav">
-    <a href="#">Dashboard</a>
-    <a href="#">Inventory</a>
-    <a href="#">Orders</a>
-    <a href="profile.html">Profile</a>
-  </nav>
+ 
+<nav class="nav">
+  <a href="#">Dashboard</a>
+  <a href="#">Inventory</a>
+  <a href="#">Orders</a>
+  <!-- NEW: Notification Bell -->
+  <a href="#" id="notificationBell">
+    🔔 Alerts <span id="notifCount" style="color:#e74c3c; font-weight:bold; display:none;">(0)</span>
+  </a>
+  <a href="profile.html">Profile</a>
+</nav>
 </header>
 
 <main class="page">
 
   <section class="hero">
+    <!-- NEW: Pending Requests Section -->
+<section class="filters-section" style="margin-bottom: 40px; border-bottom: 2px dashed #e5e7eb; padding-bottom: 20px;">
+  <h2>Pending Food Requests</h2>
+  <div class="inventory-grid" id="requestsGrid">
+    <p style="color: #666;">Loading requests...</p>
+  </div>
+</section>
     <div>
       <h1>Restaurant Inventory</h1>
       <p>Manage leftover food, discounts, and available items in one place.</p>
