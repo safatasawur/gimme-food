@@ -1,80 +1,38 @@
-let availableFood = [];
+// =====================================================
+// CUSTOMER SETTINGS & STATE
+// =====================================================
+const API_URL = window.API_BASE_URL || "http://localhost:5000";
 
-function loadFood() {
-  availableFood = JSON.parse(localStorage.getItem("foodItems")) || [];
-}
+// Make sure your login system saves the logged-in user's ID
+const currentUserId = localStorage.getItem("userId") || 1; 
 
-// Try to load food from server and fall back to localStorage
-async function loadFoodFromServer() {
-  try {
-    const resp = await fetch(window.API_BASE_URL + "/api/food");
-    if (!resp.ok) throw new Error("Bad response");
-
-    const data = await resp.json();
-
-    if (Array.isArray(data) && data.length) {
-      availableFood = data;
-      localStorage.setItem("foodItems", JSON.stringify(availableFood));
-      renderFoodItems(availableFood);
-      return;
-    }
-  } catch (err) {
-    console.warn("Could not load food from server, using localStorage", err);
-    loadFood();
-  }
-}
+let availableFood = []; // Stores the food fetched from the server
 
 const foodGrid = document.getElementById("foodGrid");
-const historyList = document.getElementById("historyList");
 const searchInput = document.getElementById("searchInput");
 const typeFilter = document.getElementById("typeFilter");
 const categoryFilter = document.getElementById("categoryFilter");
 const logoutBtn = document.getElementById("logoutBtn");
+const notifCount = document.getElementById("notifCount");
 
-function checkAccess() {
-  const isLoggedIn = localStorage.getItem("isLoggedIn");
-  const userRole = localStorage.getItem("userRole");
+// =====================================================
+// 1. FETCH AND RENDER FOOD
+// =====================================================
+async function loadFoodFromServer() {
+  try {
+    const resp = await fetch(`${API_URL}/api/food`);
+    if (!resp.ok) throw new Error("Server error");
 
-  if (isLoggedIn !== "true" || userRole !== "customer") {
-    window.location.href = "index.html";
+    availableFood = await resp.json();
+    filterFood(); // Apply any active filters and render
+  } catch (err) {
+    console.error("Could not load food:", err);
+    if (foodGrid) foodGrid.innerHTML = `<p class="empty-text">Error loading food. Is the server running?</p>`;
   }
-}
-
-function getBadgeClass(type) {
-  if (type === "discount") return "badge-discount";
-  if (type === "free") return "badge-free";
-  return "badge-regular";
-}
-
-function getBadgeLabel(type) {
-  if (type === "discount") return "Discount";
-  if (type === "free") return "Free Food";
-  return type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-function getRequests() {
-  return JSON.parse(localStorage.getItem("customerRequests")) || [];
-}
-
-function saveRequests(requests) {
-  localStorage.setItem("customerRequests", JSON.stringify(requests));
-}
-
-function hasAlreadyRequested(item) {
-  const requests = getRequests();
-  const userEmail = localStorage.getItem("userEmail");
-
-  return requests.some(
-    (request) =>
-      request.userEmail === userEmail &&
-      request.restaurant === item.restaurant &&
-      request.name === item.name
-  );
 }
 
 function renderFoodItems(items) {
   if (!foodGrid) return;
-
   foodGrid.innerHTML = "";
 
   if (items.length === 0) {
@@ -83,27 +41,28 @@ function renderFoodItems(items) {
   }
 
   items.forEach((item) => {
-    const alreadyRequested = hasAlreadyRequested(item);
+    // Determine badge styling
+    let badgeClass = "badge-regular";
+    if (item.type === "discount") badgeClass = "badge-discount";
+    if (item.type === "free") badgeClass = "badge-free";
+    
+    // Format badge text
+    let badgeLabel = item.type === "free" ? "Free Food" : item.type.charAt(0).toUpperCase() + item.type.slice(1);
 
     const card = document.createElement("div");
     card.className = "food-card";
 
+    // Note: We pass BOTH item.id and item.owner_id to the request function
     card.innerHTML = `
-      <span class="badge ${getBadgeClass(item.type)}">${getBadgeLabel(item.type)}</span>
+      <span class="badge ${badgeClass}">${badgeLabel}</span>
       <h3>${item.name}</h3>
       <p><strong>Restaurant:</strong> ${item.restaurant}</p>
       <p><strong>Category:</strong> ${item.category}</p>
-      <p><strong>Expiry:</strong> ${item.expiryDate}</p>
+      <p><strong>Expiry:</strong> ${item.expiry_date || 'N/A'}</p>
       <p><strong>Available Portions:</strong> ${item.quantity}</p>
-      <button class="request-btn" onclick="requestFood(${item.id})"
-        ${alreadyRequested || item.quantity < 1 ? "disabled" : ""}>
-        ${
-          alreadyRequested
-            ? "Already Requested"
-            : item.quantity < 1
-            ? "Not Available"
-            : "Request One Portion"
-        }
+      
+      <button class="request-btn" onclick="requestFood(${item.id}, ${item.owner_id})" ${item.quantity < 1 ? "disabled" : ""}>
+        ${item.quantity < 1 ? "Not Available" : "Request One Portion"}
       </button>
     `;
 
@@ -111,61 +70,19 @@ function renderFoodItems(items) {
   });
 }
 
-function renderRequestHistory() {
-  if (!historyList) return;
-
-  const requests = getRequests();
-  const userEmail = localStorage.getItem("userEmail");
-
-  const myRequests = requests.filter(
-    (request) => request.userEmail === userEmail
-  );
-
-  historyList.innerHTML = "";
-
-  if (myRequests.length === 0) {
-    historyList.innerHTML = `<p class="empty-text">You have not requested any food yet.</p>`;
-    return;
-  }
-
-  myRequests.forEach((request) => {
-    const item = document.createElement("div");
-    item.className = "history-item";
-
-    item.innerHTML = `
-      <p><strong>Food:</strong> ${request.name}</p>
-      <p><strong>Restaurant:</strong> ${request.restaurant}</p>
-      <p><strong>Category:</strong> ${request.category}</p>
-      <p><strong>Requested On:</strong> ${request.requestedAt}</p>
-    `;
-
-    historyList.appendChild(item);
-  });
-}
-
+// =====================================================
+// 2. FILTER LOGIC
+// =====================================================
 function filterFood() {
-  loadFood();
-
-  const searchValue = searchInput
-    ? searchInput.value.toLowerCase().trim()
-    : "";
-
+  const searchValue = searchInput ? searchInput.value.toLowerCase().trim() : "";
   const selectedType = typeFilter ? typeFilter.value.toLowerCase() : "all";
-  const selectedCategory = categoryFilter
-    ? categoryFilter.value.toLowerCase()
-    : "all";
+  const selectedCategory = categoryFilter ? categoryFilter.value.toLowerCase() : "all";
 
   const filtered = availableFood.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchValue) ||
-      item.restaurant.toLowerCase().includes(searchValue);
-
-    const matchesType =
-      selectedType === "all" || item.type.toLowerCase() === selectedType;
-
-    const matchesCategory =
-      selectedCategory === "all" ||
-      item.category.toLowerCase() === selectedCategory;
+    const matchesSearch = item.name.toLowerCase().includes(searchValue) || 
+                          (item.restaurant && item.restaurant.toLowerCase().includes(searchValue));
+    const matchesType = selectedType === "all" || item.type.toLowerCase() === selectedType;
+    const matchesCategory = selectedCategory === "all" || item.category.toLowerCase() === selectedCategory;
 
     return matchesSearch && matchesType && matchesCategory;
   });
@@ -173,100 +90,85 @@ function filterFood() {
   renderFoodItems(filtered);
 }
 
-function requestFood(id) {
-  loadFood();
+// =====================================================
+// 3. SEND FOOD REQUEST
+// =====================================================
+window.requestFood = async function(foodId, ownerId) {
+  try {
+    const payload = {
+      food_id: foodId,
+      customer_id: currentUserId,
+      owner_id: ownerId
+    };
 
-  const item = availableFood.find((food) => food.id === id);
-  if (!item) return;
+    const resp = await fetch(`${API_URL}/api/request-food`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-  const userEmail = localStorage.getItem("userEmail");
-  const requests = getRequests();
+    if (!resp.ok) throw new Error("Failed to send request");
 
-  if (hasAlreadyRequested(item)) {
-    alert("You already requested one portion of this food item.");
-    return;
+    alert("Food requested successfully! The restaurant has been notified.");
+    
+    // Reload food to get updated quantities
+    loadFoodFromServer(); 
+
+  } catch (err) {
+    console.error("Error sending request:", err);
+    alert("There was an error sending your request.");
   }
-
-  if (item.quantity < 1) {
-    alert("This item is no longer available.");
-    return;
-  }
-
-  item.quantity -= 1;
-
-  requests.push({
-    id: Date.now(),
-    userEmail: userEmail,
-    name: item.name,
-    restaurant: item.restaurant,
-    category: item.category,
-    requestedAt: new Date().toLocaleString(),
-  });
-
-  (async function () {
-    try {
-      const resp = await fetch(
-        window.API_BASE_URL + "/api/request-food",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: userEmail,
-            item_id: item.id,
-          }),
-        }
-      );
-
-      if (!resp.ok) {
-        console.warn("Server request-food responded with", resp.status);
-      }
-    } catch (err) {
-      console.warn("Network error sending request to server", err);
-    }
-  })();
-
-  saveRequests(requests);
-  renderFoodItems(availableFood);
-  renderRequestHistory();
-
-  alert("Food requested successfully ✔");
-}
-
-function logout() {
-  localStorage.removeItem("isLoggedIn");
-  localStorage.removeItem("userRole");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("currentUser");
-
-  window.location.href = "index.html";
-}
-
-window.goToProfile = function () {
-  console.log("Navigating to profile...");
-  window.location.href = "profile.html";
 };
 
+// =====================================================
+// 4. POLL FOR NOTIFICATIONS (Approve/Decline)
+// =====================================================
+async function checkNotifications() {
+  try {
+    const resp = await fetch(`${API_URL}/api/notifications/${currentUserId}`);
+    if (!resp.ok) return;
+    
+    const notifications = await resp.json();
+    
+    // Find unread notifications
+    const unread = notifications.filter(n => n.is_read === 0 || n.is_read === false);
+    
+    if (unread.length > 0) {
+      notifCount.style.display = "inline";
+      notifCount.innerText = `(${unread.length})`;
+      
+      // Optional: Alert the user of the most recent notification
+      // alert("New Update: " + unread[0].message);
+    } else {
+      notifCount.style.display = "none";
+    }
+  } catch (err) {
+    console.error("Error checking notifications:", err);
+  }
+}
+
+// =====================================================
+// EVENT LISTENERS & INITIALIZATION
+// =====================================================
 if (searchInput) searchInput.addEventListener("input", filterFood);
 if (typeFilter) typeFilter.addEventListener("change", filterFood);
 if (categoryFilter) categoryFilter.addEventListener("change", filterFood);
-if (logoutBtn) logoutBtn.addEventListener("click", logout);
 
-window.requestFood = requestFood;
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    localStorage.clear();
+    window.location.href = "index.html";
+  });
+}
 
-checkAccess();
+window.goToProfile = function () {
+  window.location.href = "profile.html";
+};
 
-// Attempt to load from server first
-loadFoodFromServer().then(() => {
-  filterFood();
-  renderRequestHistory();
-});
+// Run immediately on page load
+loadFoodFromServer();
+checkNotifications();
 
-fetch("/request-food", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    customer_id: 1,
-    owner_id: 2,
-    food_id: 5,
-  }),
-});
+// Poll every 10 seconds for new notifications and updated food inventory
+setInterval(checkNotifications, 10000);
+setInterval(loadFoodFromServer, 10000);
