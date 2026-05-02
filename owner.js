@@ -134,6 +134,7 @@ function getBadgeLabel(type) {
 }
 
 function renderFoodItems(items) {
+  if (!inventoryGrid) return;
   inventoryGrid.innerHTML = "";
 
   if (items.length === 0) {
@@ -154,7 +155,7 @@ function renderFoodItems(items) {
       <div class="food-details">
         <p><strong>Restaurant:</strong> ${item.restaurant || "-"}</p>
         <p><strong>Category:</strong> ${item.category}</p>
-        <p><strong>Expiry:</strong> ${item.expiryDate}</p>
+        <p><strong>Expiry:</strong> ${item.expiry_date || item.expiryDate || "-"}</p>
         <p><strong>Quantity:</strong> ${item.quantity ?? 1}</p>
       </div>
 
@@ -174,7 +175,7 @@ function openModal(id) {
   modalName.textContent = item.name;
   modalCategory.textContent = item.category;
   modalType.textContent = getBadgeLabel(item.type);
-  modalExpiry.textContent = item.expiryDate;
+  modalExpiry.textContent = item.expiry_date || item.expiryDate || "-";
   modalIngredients.textContent = Array.isArray(item.ingredients)
     ? item.ingredients.join(", ")
     : item.ingredients;
@@ -199,9 +200,12 @@ addItemForm.addEventListener("submit", function (e) {
   e.preventDefault();
 
   foodItems = getFoodItems();
+  
+  // === GRAB THE LOGGED-IN OWNER'S ID ===
+  const currentOwnerId = localStorage.getItem("userId"); 
 
   const newItem = {
-    id: Date.now(),
+    id: Date.now(), // Temporary ID for local UI
     restaurant: localStorage.getItem("restaurantName") || "My Restaurant",
     name: document.getElementById("foodName").value.trim(),
     category: document.getElementById("foodCategory").value,
@@ -225,10 +229,11 @@ addItemForm.addEventListener("submit", function (e) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          owner_id: currentOwnerId, // Attached the missing ID!
           restaurant: newItem.restaurant,
           name: newItem.name,
           category: newItem.category,
-          ingredients: newItem.ingredients,
+          ingredients: newItem.ingredients.join(", "), // Convert array to string for the DB
           expiryDate: newItem.expiryDate,
           type: newItem.type,
           quantity: newItem.quantity,
@@ -237,6 +242,11 @@ addItemForm.addEventListener("submit", function (e) {
 
       if (!resp.ok) {
         console.warn("Server add-food responded with", resp.status);
+        alert("Database Error: Could not save food to server.");
+      } else {
+        console.log("Food successfully saved to database!");
+        // Refresh from server to get the real database ID
+        syncInventoryWithServer();
       }
     } catch (err) {
       console.warn("Network error adding food to server", err);
@@ -249,9 +259,9 @@ addItemForm.addEventListener("submit", function (e) {
   alert("Item added successfully ✔");
 });
 
-closeModal.addEventListener("click", closeDetailModal);
-addItemBtn.addEventListener("click", openAddItemModal);
-closeAddModal.addEventListener("click", closeAddItemModal);
+if (closeModal) closeModal.addEventListener("click", closeDetailModal);
+if (addItemBtn) addItemBtn.addEventListener("click", openAddItemModal);
+if (closeAddModal) closeAddModal.addEventListener("click", closeAddItemModal);
 
 window.addEventListener("click", (e) => {
   if (e.target === modal) closeDetailModal();
@@ -301,6 +311,7 @@ function logout() {
   localStorage.removeItem("isLoggedIn");
   localStorage.removeItem("userRole");
   localStorage.removeItem("userEmail");
+  localStorage.removeItem("userId");
   localStorage.removeItem("currentUser");
 
   window.location.href = "index.html";
@@ -322,6 +333,7 @@ const notifCount = document.getElementById("notifCount");
 
 // 1. Fetch and render pending requests
 async function loadOwnerRequests() {
+  if (!requestsGrid) return;
   try {
     const resp = await fetch(`${API_URL}/api/owner-requests/${currentUserId}`);
     if (!resp.ok) return;
@@ -388,6 +400,7 @@ window.handleFoodRequest = async function(reqId, action) {
 
 // 3. Poll for Unread Notifications
 async function checkNotifications() {
+  if (!notifCount) return;
   try {
     const resp = await fetch(`${API_URL}/api/notifications/${currentUserId}`);
     if (!resp.ok) return;
