@@ -12,88 +12,37 @@ class FoodItem {
 }
 
 const defaultFoodItems = [
-  new FoodItem(
-    1,
-    "Green Bowl",
-    "Chicken Biryani",
-    "Meal",
-    ["Rice", "Chicken", "Spices", "Yogurt"],
-    "2026-03-30",
-    "discount",
-    3
-  ),
-  new FoodItem(
-    2,
-    "Bake House",
-    "Vegetable Sandwich",
-    "Bakery",
-    ["Bread", "Tomato", "Lettuce", "Cheese"],
-    "2026-03-29",
-    "free",
-    2
-  ),
-  new FoodItem(
-    3,
-    "Cafe Bliss",
-    "Iced Coffee",
-    "Beverage",
-    ["Milk", "Coffee", "Sugar", "Ice"],
-    "2026-03-30",
-    "beverage",
-    4
-  ),
-  new FoodItem(
-    4,
-    "Pasta Point",
-    "Pasta Alfredo",
-    "Meal",
-    ["Pasta", "Cream", "Cheese", "Herbs"],
-    "2026-03-31",
-    "meal",
-    1
-  ),
-  new FoodItem(
-    5,
-    "Bake House",
-    "Chocolate Muffin",
-    "Bakery",
-    ["Flour", "Cocoa", "Eggs", "Sugar"],
-    "2026-03-30",
-    "bakery",
-    5
-  ),
-  new FoodItem(
-    6,
-    "Fresh Sip",
-    "Fruit Juice",
-    "Beverage",
-    ["Orange", "Apple", "Mango"],
-    "2026-03-29",
-    "discount",
-    2
-  )
+  new FoodItem(1, "Green Bowl", "Chicken Biryani", "Meal", ["Rice", "Chicken", "Spices", "Yogurt"], "2026-03-30", "discount", 3),
+  new FoodItem(2, "Bake House", "Vegetable Sandwich", "Bakery", ["Bread", "Tomato", "Lettuce", "Cheese"], "2026-03-29", "free", 2),
+  new FoodItem(3, "Cafe Bliss", "Iced Coffee", "Beverage", ["Milk", "Coffee", "Sugar", "Ice"], "2026-03-30", "beverage", 4),
+  new FoodItem(4, "Pasta Point", "Pasta Alfredo", "Meal", ["Pasta", "Cream", "Cheese", "Herbs"], "2026-03-31", "meal", 1),
+  new FoodItem(5, "Bake House", "Chocolate Muffin", "Bakery", ["Flour", "Cocoa", "Eggs", "Sugar"], "2026-03-30", "bakery", 5),
+  new FoodItem(6, "Fresh Sip", "Fruit Juice", "Beverage", ["Orange", "Apple", "Mango"], "2026-03-29", "discount", 2)
 ];
+
+const API_URL = window.API_BASE_URL || "http://localhost:5000";
+const currentUserId = localStorage.getItem("userId");
 
 function getFoodItems() {
   const saved = JSON.parse(localStorage.getItem("foodItems"));
-  if (saved && Array.isArray(saved)) {
-    return saved;
-  }
+  if (saved && Array.isArray(saved)) return saved;
   localStorage.setItem("foodItems", JSON.stringify(defaultFoodItems));
   return defaultFoodItems;
 }
 
-// Try to sync local inventory with server if available
+// Sync local inventory with server
 async function syncInventoryWithServer() {
   try {
-    const resp = await fetch(window.API_BASE_URL + "/api/food");
+    const resp = await fetch(API_URL + "/api/food");
     if (!resp.ok) return;
 
     const data = await resp.json();
 
     if (Array.isArray(data) && data.length) {
-      localStorage.setItem("foodItems", JSON.stringify(data));
-      foodItems = data;
+      // Filter to only show food belonging to this logged-in owner
+      const myFood = data.filter(item => String(item.owner_id) === String(currentUserId));
+      localStorage.setItem("foodItems", JSON.stringify(myFood));
+      foodItems = myFood;
       renderFoodItems(foodItems);
     }
   } catch (err) {
@@ -193,71 +142,63 @@ function openAddItemModal() {
 
 function closeAddItemModal() {
   addItemModal.classList.add("hidden");
-  addItemForm.reset();
+  if(addItemForm) addItemForm.reset();
 }
 
-addItemForm.addEventListener("submit", function (e) {
-  e.preventDefault();
+if (addItemForm) {
+  addItemForm.addEventListener("submit", function (e) {
+    e.preventDefault();
 
-  foodItems = getFoodItems();
-  
-  // === GRAB THE LOGGED-IN OWNER'S ID ===
-  const currentOwnerId = localStorage.getItem("userId"); 
+    foodItems = getFoodItems();
+    
+    const newItem = {
+      id: Date.now(),
+      restaurant: localStorage.getItem("restaurantName") || "My Restaurant",
+      name: document.getElementById("foodName").value.trim(),
+      category: document.getElementById("foodCategory").value,
+      ingredients: document
+        .getElementById("foodIngredients")
+        .value.split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+      expiryDate: document.getElementById("foodExpiry").value,
+      type: document.getElementById("foodType").value,
+      quantity: 1,
+    };
 
-  const newItem = {
-    id: Date.now(), // Temporary ID for local UI
-    restaurant: localStorage.getItem("restaurantName") || "My Restaurant",
-    name: document.getElementById("foodName").value.trim(),
-    category: document.getElementById("foodCategory").value,
-    ingredients: document
-      .getElementById("foodIngredients")
-      .value.split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-    expiryDate: document.getElementById("foodExpiry").value,
-    type: document.getElementById("foodType").value,
-    quantity: 1,
-  };
+    // Sync with server immediately
+    (async function () {
+      try {
+        const resp = await fetch(API_URL + "/api/food", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            owner_id: currentUserId, // Linked to correct owner
+            restaurant: newItem.restaurant,
+            name: newItem.name,
+            category: newItem.category,
+            ingredients: newItem.ingredients.join(", "),
+            expiryDate: newItem.expiryDate,
+            type: newItem.type,
+            quantity: newItem.quantity,
+          }),
+        });
 
-  foodItems.push(newItem);
-  saveFoodItems(foodItems);
-
-  // Sync with server
-  (async function () {
-    try {
-      const resp = await fetch(window.API_BASE_URL + "/api/food", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          owner_id: currentOwnerId, // Attached the missing ID!
-          restaurant: newItem.restaurant,
-          name: newItem.name,
-          category: newItem.category,
-          ingredients: newItem.ingredients.join(", "), // Convert array to string for the DB
-          expiryDate: newItem.expiryDate,
-          type: newItem.type,
-          quantity: newItem.quantity,
-        }),
-      });
-
-      if (!resp.ok) {
-        console.warn("Server add-food responded with", resp.status);
-        alert("Database Error: Could not save food to server.");
-      } else {
-        console.log("Food successfully saved to database!");
-        // Refresh from server to get the real database ID
-        syncInventoryWithServer();
+        if (!resp.ok) {
+          console.warn("Server add-food responded with", resp.status);
+          alert("Database Error: Could not save food to server.");
+        } else {
+          syncInventoryWithServer();
+          alert("Item added successfully ✔");
+        }
+      } catch (err) {
+        console.warn("Network error adding food to server", err);
       }
-    } catch (err) {
-      console.warn("Network error adding food to server", err);
-    }
-  })();
+    })();
 
-  closeAddItemModal();
-  renderFoodItems(foodItems);
-
-  alert("Item added successfully ✔");
-});
+    closeAddItemModal();
+  });
+}
 
 if (closeModal) closeModal.addEventListener("click", closeDetailModal);
 if (addItemBtn) addItemBtn.addEventListener("click", openAddItemModal);
@@ -274,10 +215,8 @@ filterButtons.forEach((button) => {
     if (activeButton) activeButton.classList.remove("active");
 
     button.classList.add("active");
-
     const filter = button.dataset.filter;
-    foodItems = getFoodItems();
-
+    
     if (filter === "all") {
       renderFoodItems(foodItems);
       return;
@@ -294,8 +233,6 @@ filterButtons.forEach((button) => {
   });
 });
 
-renderFoodItems(foodItems);
-
 window.openModal = openModal;
 
 function checkAccess() {
@@ -307,31 +244,12 @@ function checkAccess() {
   }
 }
 
-function logout() {
-  localStorage.removeItem("isLoggedIn");
-  localStorage.removeItem("userRole");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("userId");
-  localStorage.removeItem("currentUser");
-
-  window.location.href = "index.html";
-}
-
-checkAccess();
-syncInventoryWithServer();
-
 // =====================================================
-// NEW: NOTIFICATIONS & REQUESTS LOGIC
+// NOTIFICATIONS & REQUESTS LOGIC
 // =====================================================
-
-// Note: Ensure your login script saves the user's ID to localStorage as "userId"
-const currentUserId = localStorage.getItem("userId") || 1; // Fallback to 1 for testing
-const API_URL = window.API_BASE_URL || "http://localhost:5000";
-
 const requestsGrid = document.getElementById("requestsGrid");
 const notifCount = document.getElementById("notifCount");
 
-// 1. Fetch and render pending requests
 async function loadOwnerRequests() {
   if (!requestsGrid) return;
   try {
@@ -340,7 +258,6 @@ async function loadOwnerRequests() {
     const requests = await resp.json();
     
     requestsGrid.innerHTML = "";
-    // Filter only requests that need an answer
     const pendingReqs = requests.filter(r => r.status === 'pending');
 
     if (pendingReqs.length === 0) {
@@ -348,7 +265,6 @@ async function loadOwnerRequests() {
       return;
     }
 
-    // Render a card for each request
     pendingReqs.forEach(req => {
       const card = document.createElement("div");
       card.classList.add("food-card"); 
@@ -363,7 +279,6 @@ async function loadOwnerRequests() {
           <p><strong>Time:</strong> ${new Date(req.created_at).toLocaleTimeString()}</p>
         </div>
         <div class="card-actions" style="gap: 10px; display: flex; margin-top: 15px;">
-          <!-- Inline styles for quick styling, you can move these to CSS later -->
           <button class="primary-btn" onclick="handleFoodRequest(${req.id}, 'approve')" style="background: #27ae60; flex: 1;">Approve</button>
           <button class="secondary-btn" onclick="handleFoodRequest(${req.id}, 'decline')" style="background: #e74c3c; color: white; border: none; flex: 1;">Decline</button>
         </div>
@@ -375,7 +290,6 @@ async function loadOwnerRequests() {
   }
 }
 
-// 2. Handle Approve/Decline button clicks
 window.handleFoodRequest = async function(reqId, action) {
   const endpoint = action === 'approve' 
     ? `${API_URL}/api/approve-request/${reqId}` 
@@ -387,10 +301,9 @@ window.handleFoodRequest = async function(reqId, action) {
       headers: { "Content-Type": "application/json" }
     });
     
-    const data = await resp.json();
+    await resp.json();
     alert(`Request ${action}d successfully!`); 
     
-    // Refresh the UI to remove the answered request and update inventory counts
     loadOwnerRequests(); 
     syncInventoryWithServer(); 
   } catch (err) {
@@ -398,7 +311,6 @@ window.handleFoodRequest = async function(reqId, action) {
   }
 }
 
-// 3. Poll for Unread Notifications
 async function checkNotifications() {
   if (!notifCount) return;
   try {
@@ -406,7 +318,6 @@ async function checkNotifications() {
     if (!resp.ok) return;
     const notifications = await resp.json();
     
-    // Count unread notifications
     const unread = notifications.filter(n => n.is_read === 0 || n.is_read === false);
     
     if (unread.length > 0) {
@@ -420,14 +331,12 @@ async function checkNotifications() {
   }
 }
 
-// =====================================================
-// INITIALIZE POLLING
-// =====================================================
-
-// Run immediately on page load
+// INITIALIZE APP
+checkAccess();
+syncInventoryWithServer();
 loadOwnerRequests();
 checkNotifications();
 
-// Run every 10 seconds to create the "Real-time" effect
+// Polling setup
 setInterval(loadOwnerRequests, 10000); 
 setInterval(checkNotifications, 10000);
