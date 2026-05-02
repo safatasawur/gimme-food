@@ -2,11 +2,9 @@
 // CUSTOMER SETTINGS & STATE
 // =====================================================
 const API_URL = window.API_BASE_URL || "http://localhost:5000";
-
-// Make sure your login system saves the logged-in user's ID
 const currentUserId = localStorage.getItem("userId") || 1; 
 
-let availableFood = []; // Stores the food fetched from the server
+let availableFood = []; 
 
 const foodGrid = document.getElementById("foodGrid");
 const searchInput = document.getElementById("searchInput");
@@ -14,6 +12,15 @@ const typeFilter = document.getElementById("typeFilter");
 const categoryFilter = document.getElementById("categoryFilter");
 const logoutBtn = document.getElementById("logoutBtn");
 const notifCount = document.getElementById("notifCount");
+
+function checkAccess() {
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+  const userRole = localStorage.getItem("userRole");
+
+  if (isLoggedIn !== "true" || userRole !== "customer") {
+    window.location.href = "index.html";
+  }
+}
 
 // =====================================================
 // 1. FETCH AND RENDER FOOD
@@ -31,6 +38,18 @@ async function loadFoodFromServer() {
   }
 }
 
+function getBadgeClass(type) {
+  if (type === "discount") return "badge-discount";
+  if (type === "free") return "badge-free";
+  return "badge-regular";
+}
+
+function getBadgeLabel(type) {
+  if (type === "discount") return "Discount";
+  if (type === "free") return "Free Food";
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
 function renderFoodItems(items) {
   if (!foodGrid) return;
   foodGrid.innerHTML = "";
@@ -41,20 +60,12 @@ function renderFoodItems(items) {
   }
 
   items.forEach((item) => {
-    // Determine badge styling
-    let badgeClass = "badge-regular";
-    if (item.type === "discount") badgeClass = "badge-discount";
-    if (item.type === "free") badgeClass = "badge-free";
-    
-    // Format badge text
-    let badgeLabel = item.type === "free" ? "Free Food" : item.type.charAt(0).toUpperCase() + item.type.slice(1);
-
     const card = document.createElement("div");
     card.className = "food-card";
 
     // Note: We pass BOTH item.id and item.owner_id to the request function
     card.innerHTML = `
-      <span class="badge ${badgeClass}">${badgeLabel}</span>
+      <span class="badge ${getBadgeClass(item.type)}">${getBadgeLabel(item.type)}</span>
       <h3>${item.name}</h3>
       <p><strong>Restaurant:</strong> ${item.restaurant}</p>
       <p><strong>Category:</strong> ${item.category}</p>
@@ -124,6 +135,7 @@ window.requestFood = async function(foodId, ownerId) {
 // 4. POLL FOR NOTIFICATIONS (Approve/Decline)
 // =====================================================
 async function checkNotifications() {
+  if (!notifCount) return;
   try {
     const resp = await fetch(`${API_URL}/api/notifications/${currentUserId}`);
     if (!resp.ok) return;
@@ -136,9 +148,6 @@ async function checkNotifications() {
     if (unread.length > 0) {
       notifCount.style.display = "inline";
       notifCount.innerText = `(${unread.length})`;
-      
-      // Optional: Alert the user of the most recent notification
-      // alert("New Update: " + unread[0].message);
     } else {
       notifCount.style.display = "none";
     }
@@ -165,7 +174,8 @@ window.goToProfile = function () {
   window.location.href = "profile.html";
 };
 
-// Run immediately on page load
+// INITIALIZE APP
+checkAccess();
 loadFoodFromServer();
 checkNotifications();
 
