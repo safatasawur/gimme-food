@@ -309,6 +309,112 @@ function logout() {
 checkAccess();
 syncInventoryWithServer();
 
-fetch("/owner-requests");
-fetch("/approve-request/3", { method: "POST" });
-fetch("/decline-request/3", { method: "POST" });
+// =====================================================
+// NEW: NOTIFICATIONS & REQUESTS LOGIC
+// =====================================================
+
+// Note: Ensure your login script saves the user's ID to localStorage as "userId"
+const currentUserId = localStorage.getItem("userId") || 1; // Fallback to 1 for testing
+const API_URL = window.API_BASE_URL || "http://localhost:5000";
+
+const requestsGrid = document.getElementById("requestsGrid");
+const notifCount = document.getElementById("notifCount");
+
+// 1. Fetch and render pending requests
+async function loadOwnerRequests() {
+  try {
+    const resp = await fetch(`${API_URL}/api/owner-requests/${currentUserId}`);
+    if (!resp.ok) return;
+    const requests = await resp.json();
+    
+    requestsGrid.innerHTML = "";
+    // Filter only requests that need an answer
+    const pendingReqs = requests.filter(r => r.status === 'pending');
+
+    if (pendingReqs.length === 0) {
+      requestsGrid.innerHTML = `<p style="color: #666;">No pending requests at the moment.</p>`;
+      return;
+    }
+
+    // Render a card for each request
+    pendingReqs.forEach(req => {
+      const card = document.createElement("div");
+      card.classList.add("food-card"); 
+      card.innerHTML = `
+        <div class="food-header">
+          <div class="food-title">Request #${req.id}</div>
+          <span class="food-badge badge-discount">Needs Action</span>
+        </div>
+        <div class="food-details">
+          <p><strong>Food ID:</strong> ${req.food_id}</p>
+          <p><strong>Customer ID:</strong> ${req.customer_id}</p>
+          <p><strong>Time:</strong> ${new Date(req.created_at).toLocaleTimeString()}</p>
+        </div>
+        <div class="card-actions" style="gap: 10px; display: flex; margin-top: 15px;">
+          <!-- Inline styles for quick styling, you can move these to CSS later -->
+          <button class="primary-btn" onclick="handleFoodRequest(${req.id}, 'approve')" style="background: #27ae60; flex: 1;">Approve</button>
+          <button class="secondary-btn" onclick="handleFoodRequest(${req.id}, 'decline')" style="background: #e74c3c; color: white; border: none; flex: 1;">Decline</button>
+        </div>
+      `;
+      requestsGrid.appendChild(card);
+    });
+  } catch (err) {
+    console.error("Error loading requests:", err);
+  }
+}
+
+// 2. Handle Approve/Decline button clicks
+window.handleFoodRequest = async function(reqId, action) {
+  const endpoint = action === 'approve' 
+    ? `${API_URL}/api/approve-request/${reqId}` 
+    : `${API_URL}/api/decline-request/${reqId}`;
+
+  try {
+    const resp = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    
+    const data = await resp.json();
+    alert(`Request ${action}d successfully!`); 
+    
+    // Refresh the UI to remove the answered request and update inventory counts
+    loadOwnerRequests(); 
+    syncInventoryWithServer(); 
+  } catch (err) {
+    console.error(`Error trying to ${action} request:`, err);
+  }
+}
+
+// 3. Poll for Unread Notifications
+async function checkNotifications() {
+  try {
+    const resp = await fetch(`${API_URL}/api/notifications/${currentUserId}`);
+    if (!resp.ok) return;
+    const notifications = await resp.json();
+    
+    // Count unread notifications
+    const unread = notifications.filter(n => n.is_read === 0 || n.is_read === false);
+    
+    if (unread.length > 0) {
+      notifCount.style.display = "inline";
+      notifCount.innerText = `(${unread.length})`;
+    } else {
+      notifCount.style.display = "none";
+    }
+  } catch (err) {
+    console.error("Error checking notifications:", err);
+  }
+}
+
+// =====================================================
+// INITIALIZE POLLING
+// =====================================================
+
+// Run immediately on page load
+loadOwnerRequests();
+checkNotifications();
+
+// Run every 10 seconds to create the "Real-time" effect
+setInterval(loadOwnerRequests, 10000); 
+setInterval(checkNotifications, 10000);
