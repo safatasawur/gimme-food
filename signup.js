@@ -42,13 +42,11 @@ function toggleForm(form) {
 function login() {
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
-  
   if (!email || !password) {
     showMessage("Please fill all fields ❗");
     return;
   }
 
-  // Try server login first, fallback to localStorage if server fails
   (async function () {
     try {
       const resp = await fetch(window.API_BASE_URL + '/api/login', {
@@ -62,17 +60,15 @@ function login() {
         const role = data.role || currentRole || 'customer';
         const user = data.user || {};
 
-        // === THE FIX IS HERE: GRAB THE CORRECT ID ===
-        // The DB returns user_id for customers, and seller_id for owners
+        // === THE FIX: GRAB THE ID FROM THE DATABASE ===
         const actualId = user.user_id || user.seller_id; 
 
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userRole", role);
         localStorage.setItem("userEmail", email);
-        localStorage.setItem("userId", actualId); // <--- SAVING THE ID FOR REQUESTS
+        localStorage.setItem("userId", actualId); // SAVES THE ID
         localStorage.setItem("currentUser", JSON.stringify(user));
         
-        // Save fields for profile page
         localStorage.setItem("savedName", user.username || "");
         localStorage.setItem("savedEmail", user.email || email);
         localStorage.setItem("savedAddress", user.restaurant_address || user.user_city || "");
@@ -81,53 +77,18 @@ function login() {
         if (role === "owner") {
           localStorage.setItem("restaurantName", user.restaurant_name || "");
           localStorage.setItem("restaurantAddress", user.restaurant_address || "");
-        }
-        
-        showMessage(role + " logged in successfully ✔ (online)");
-        
-        if (role === "owner") {
           window.location.href = "owner.html";
         } else {
           window.location.href = "customer.html";
         }
         return;
       } else {
-        const errorData = await resp.json().catch(() => ({}));
-        console.warn('Server login failed:', errorData.error || resp.status);
-        showMessage("Server Login Failed: " + (errorData.error || "Invalid Credentials"));
+        showMessage("Server Login Failed: Invalid Credentials");
         return; 
       }
     } catch (err) {
       console.error('Login fetch failed:', err);
-      showMessage("Login server error, falling back to offline mode.");
-    }
-
-    // Fallback to localStorage
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const foundUser = users.find(user =>
-      user.email === email &&
-      user.password === password &&
-      user.role === currentRole
-    );
-
-    if (foundUser) {
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userRole", currentRole);
-      localStorage.setItem("userEmail", email);
-      
-      // Fallback ID for offline mode so it doesn't break
-      localStorage.setItem("userId", foundUser.id || Math.floor(Math.random() * 1000)); 
-      
-      localStorage.setItem("currentUser", JSON.stringify(foundUser));
-      showMessage(currentRole + " logged in successfully ✔ (offline)");
-
-      if (currentRole === "owner") {
-        window.location.href = "owner.html";
-      } else if (currentRole === "customer") {
-        window.location.href = "customer.html";
-      }
-    } else {
-      showMessage("Invalid credentials ❗");
+      showMessage("Server error. Make sure your Python backend is running.");
     }
   })();
 }
