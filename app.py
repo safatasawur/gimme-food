@@ -92,7 +92,8 @@ def init_db():
             )
             """)
 
-            # ---------------- FOOD TABLE ----------------
+          # ---------------- FOOD TABLE ----------------
+            cursor.execute("DROP TABLE IF EXISTS menu_items") # <--- ADD THIS LINE
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS menu_items (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -108,6 +109,7 @@ def init_db():
             """)
 
             # ---------------- REQUEST TABLE ----------------
+            cursor.execute("DROP TABLE IF EXISTS requests") # <--- ADD THIS LINE
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS requests (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -120,6 +122,7 @@ def init_db():
             """)
 
             # ---------------- NOTIFICATIONS ----------------
+            cursor.execute("DROP TABLE IF EXISTS notifications") # <--- ADD THIS LINE
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
                 id INT AUTO_INCREMENT PRIMARY KEY,
