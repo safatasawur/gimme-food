@@ -42,6 +42,7 @@ function toggleForm(form) {
 function login() {
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
+  
   if (!email || !password) {
     showMessage("Please fill all fields ❗");
     return;
@@ -59,13 +60,19 @@ function login() {
       if (resp.ok) {
         const data = await resp.json();
         const role = data.role || currentRole || 'customer';
+        const user = data.user || {};
+
+        // === THE FIX IS HERE: GRAB THE CORRECT ID ===
+        // The DB returns user_id for customers, and seller_id for owners
+        const actualId = user.user_id || user.seller_id; 
+
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userRole", role);
         localStorage.setItem("userEmail", email);
-        localStorage.setItem("currentUser", JSON.stringify(data.user || {}));
+        localStorage.setItem("userId", actualId); // <--- SAVING THE ID FOR REQUESTS
+        localStorage.setItem("currentUser", JSON.stringify(user));
         
         // Save fields for profile page
-        const user = data.user || {};
         localStorage.setItem("savedName", user.username || "");
         localStorage.setItem("savedEmail", user.email || email);
         localStorage.setItem("savedAddress", user.restaurant_address || user.user_city || "");
@@ -75,7 +82,9 @@ function login() {
           localStorage.setItem("restaurantName", user.restaurant_name || "");
           localStorage.setItem("restaurantAddress", user.restaurant_address || "");
         }
+        
         showMessage(role + " logged in successfully ✔ (online)");
+        
         if (role === "owner") {
           window.location.href = "owner.html";
         } else {
@@ -86,7 +95,7 @@ function login() {
         const errorData = await resp.json().catch(() => ({}));
         console.warn('Server login failed:', errorData.error || resp.status);
         showMessage("Server Login Failed: " + (errorData.error || "Invalid Credentials"));
-        return; // Don't fall back to offline if the server actively rejected us
+        return; 
       }
     } catch (err) {
       console.error('Login fetch failed:', err);
@@ -105,6 +114,10 @@ function login() {
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userRole", currentRole);
       localStorage.setItem("userEmail", email);
+      
+      // Fallback ID for offline mode so it doesn't break
+      localStorage.setItem("userId", foundUser.id || Math.floor(Math.random() * 1000)); 
+      
       localStorage.setItem("currentUser", JSON.stringify(foundUser));
       showMessage(currentRole + " logged in successfully ✔ (offline)");
 
