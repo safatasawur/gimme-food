@@ -538,7 +538,28 @@ def notifications(user_id):
 
     finally:
         conn.close()
+# =====================================================
+# MARK NOTIFICATIONS AS READ
+# =====================================================
 
+@app.route("/api/mark-notifications-read/<int:user_id>", methods=["POST"])
+def mark_notifications_read(user_id):
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "DB Down"}), 500
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+            UPDATE notifications
+            SET is_read = TRUE
+            WHERE user_id = %s
+            """, (user_id,))
+        conn.commit()
+        return jsonify({"message": "Notifications marked as read"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        conn.close()
 
 # =====================================================
 # START APP
