@@ -561,6 +561,35 @@ def mark_notifications_read(user_id):
     finally:
         conn.close()
 
+
+# =====================================================
+# CUSTOMER REQUEST HISTORY
+# =====================================================
+@app.route("/api/customer-requests/<int:customer_id>", methods=["GET"])
+def customer_requests(customer_id):
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "DB Down"}), 500
+    try:
+        with conn.cursor() as cursor:
+            # We join the requests and menu_items tables together so the 
+            # customer can see the food name and restaurant name!
+            cursor.execute("""
+            SELECT requests.id as req_id, requests.status, requests.created_at, 
+                   requests.food_id, menu_items.name, menu_items.restaurant, menu_items.type
+            FROM requests
+            JOIN menu_items ON requests.food_id = menu_items.id
+            WHERE requests.customer_id = %s
+            ORDER BY requests.id DESC
+            """, (customer_id,))
+            
+            rows = cursor.fetchall()
+            return jsonify(rows)
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        conn.close()
 # =====================================================
 # START APP
 # =====================================================
