@@ -5,6 +5,7 @@ const API_URL = window.API_BASE_URL || "http://localhost:5000";
 const currentUserId = localStorage.getItem("userId") || 1; 
 
 let availableFood = []; 
+let myRequestedFoodIds = []; // NEW: Keeps track of what we already requested!
 
 const foodGrid = document.getElementById("foodGrid");
 const searchInput = document.getElementById("searchInput");
@@ -23,7 +24,20 @@ function checkAccess() {
 }
 
 // =====================================================
-// 1. FETCH AND RENDER FOOD
+// 1. FETCH WHAT WE ALREADY REQUESTED (NEW)
+// =====================================================
+async function loadMyRequestedIds() {
+  try {
+    const resp = await fetch(`${API_URL}/api/customer-requests/${currentUserId}`);
+    if (resp.ok) {
+      const requests = await resp.json();
+      myRequestedFoodIds = requests.map(req => req.food_id);
+    }
+  } catch (err) { console.error("Error loading my requests", err); }
+}
+
+// =====================================================
+// 2. FETCH AND RENDER FOOD (MODIFIED FOR GRAY BUTTON)
 // =====================================================
 async function loadFoodFromServer() {
   try {
@@ -63,7 +77,22 @@ function renderFoodItems(items) {
     const card = document.createElement("div");
     card.className = "food-card";
 
-    // Note: We pass BOTH item.id and item.owner_id to the request function
+    // NEW LOGIC: Check if this item is in our requested array
+    const hasRequested = myRequestedFoodIds.includes(item.id);
+    const isUnavailable = item.quantity < 1;
+
+    let buttonHTML = "";
+
+    if (hasRequested) {
+      // GREY OUT BUTTON IF ALREADY REQUESTED
+      buttonHTML = `<button class="request-btn" disabled style="background: #9ca3af; cursor: not-allowed; color: white;">Requested ✔</button>`;
+    } else if (isUnavailable) {
+      buttonHTML = `<button class="request-btn" disabled style="background: #9ca3af; cursor: not-allowed; color: white;">Not Available</button>`;
+    } else {
+      // NORMAL BUTTON (Pass 'this' so we can change the button instantly when clicked)
+      buttonHTML = `<button class="request-btn" onclick="requestFood(${item.id}, ${item.owner_id}, this)">Request One Portion</button>`;
+    }
+
     card.innerHTML = `
       <span class="badge ${getBadgeClass(item.type)}">${getBadgeLabel(item.type)}</span>
       <h3>${item.name}</h3>
@@ -71,10 +100,7 @@ function renderFoodItems(items) {
       <p><strong>Category:</strong> ${item.category}</p>
       <p><strong>Expiry:</strong> ${item.expiry_date || 'N/A'}</p>
       <p><strong>Available Portions:</strong> ${item.quantity}</p>
-      
-      <button class="request-btn" onclick="requestFood(${item.id}, ${item.owner_id})" ${item.quantity < 1 ? "disabled" : ""}>
-        ${item.quantity < 1 ? "Not Available" : "Request One Portion"}
-      </button>
+      ${buttonHTML}
     `;
 
     foodGrid.appendChild(card);
@@ -82,7 +108,7 @@ function renderFoodItems(items) {
 }
 
 // =====================================================
-// 2. FILTER LOGIC
+// 3. FILTER LOGIC
 // =====================================================
 function filterFood() {
   const searchValue = searchInput ? searchInput.value.toLowerCase().trim() : "";
@@ -102,9 +128,14 @@ function filterFood() {
 }
 
 // =====================================================
-// 3. SEND FOOD REQUEST
+// 4. SEND FOOD REQUEST (MODIFIED FOR INSTANT GRAY-OUT)
 // =====================================================
-window.requestFood = async function(foodId, ownerId) {
+window.requestFood = async function(foodId, ownerId, btnElement) {
+  // 1. IMMEDIATELY grey out the button so the user knows it clicked
+  btnElement.innerText = "Requested ✔";
+  btnElement.style.background = "#9ca3af";
+  btnElement.disabled = true;
+
   try {
     const payload = {
       food_id: foodId,
@@ -120,7 +151,8 @@ window.requestFood = async function(foodId, ownerId) {
 
     if (!resp.ok) throw new Error("Failed to send request");
 
-    alert("Food requested successfully! The restaurant has been notified.");
+    // Add to our local array so it stays grey even if the page refreshes
+    myRequestedFoodIds.push(foodId);
     
     // Reload food to get updated quantities
     loadFoodFromServer(); 
@@ -128,11 +160,15 @@ window.requestFood = async function(foodId, ownerId) {
   } catch (err) {
     console.error("Error sending request:", err);
     alert("There was an error sending your request.");
+    // Revert the button if it failed
+    btnElement.innerText = "Request One Portion";
+    btnElement.style.background = "black";
+    btnElement.disabled = false;
   }
 };
 
 // =====================================================
-// 4. POLL FOR NOTIFICATIONS (Approve/Decline)
+// 5. POLL FOR NOTIFICATIONS (Approve/Decline)
 // =====================================================
 async function checkNotifications() {
   if (!notifCount) return;
@@ -173,15 +209,6 @@ if (logoutBtn) {
 window.goToProfile = function () {
   window.location.href = "profile.html";
 };
-
-// INITIALIZE APP
-checkAccess();
-loadFoodFromServer();
-checkNotifications();
-
-// Poll every 10 seconds for new notifications and updated food inventory
-setInterval(checkNotifications, 10000);
-setInterval(loadFoodFromServer, 10000);
 
 // =====================================================
 // SLEEK NOTIFICATION DROPDOWN MENU
@@ -326,3 +353,19 @@ if (bell && notifDropdown) {
     });
   }
 }
+
+// =====================================================
+// INITIALIZE APP (MODIFIED TO LOAD PROPERLY)
+// =====================================================
+checkAccess();
+
+// This forces the app to check what we already requested BEFORE loading the food board
+loadMyRequestedIds().then(() => {
+  loadFoodFromServer();
+});
+
+checkNotifications();
+
+// Poll every 10 seconds for new notifications and updated food inventory
+setInterval(checkNotifications, 10000);
+setInterval(loadFoodFromServer, 10000);
