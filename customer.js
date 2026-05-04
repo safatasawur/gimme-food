@@ -182,3 +182,80 @@ checkNotifications();
 // Poll every 10 seconds for new notifications and updated food inventory
 setInterval(checkNotifications, 10000);
 setInterval(loadFoodFromServer, 10000);
+
+// =====================================================
+// NOTIFICATION POPUP WINDOW
+// =====================================================
+
+// 1. Dynamically create the Modal in the HTML so we don't have to edit the HTML files
+document.body.insertAdjacentHTML('beforeend', `
+  <div class="modal hidden" id="notifModal">
+    <div class="modal-content">
+      <button class="close-btn" id="closeNotifModal">&times;</button>
+      <h2>Your Alerts</h2>
+      <div id="notifList" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;"></div>
+      <button class="primary-btn" id="markReadBtn" style="margin-top: 20px; width: 100%; background: #e74c3c; border:none;">Clear All Alerts</button>
+    </div>
+  </div>
+`);
+
+// 2. Grab the elements
+const notifModal = document.getElementById("notifModal");
+const closeNotifModal = document.getElementById("closeNotifModal");
+const notifList = document.getElementById("notifList");
+const notificationBell = document.getElementById("notificationBell");
+const markReadBtn = document.getElementById("markReadBtn");
+
+// 3. Open modal and load messages when Bell is clicked
+if (notificationBell) {
+  notificationBell.addEventListener("click", async (e) => {
+    e.preventDefault();
+    notifList.innerHTML = "<p>Loading...</p>";
+    notifModal.classList.remove("hidden");
+
+    try {
+      const resp = await fetch(`${API_URL}/api/notifications/${currentUserId}`);
+      const notifications = await resp.json();
+      const unread = notifications.filter(n => n.is_read === 0 || n.is_read === false);
+
+      if (unread.length === 0) {
+        notifList.innerHTML = "<p style='color:#666;'>No new alerts.</p>";
+      } else {
+        notifList.innerHTML = "";
+        unread.forEach(n => {
+          const item = document.createElement("div");
+          item.style = "padding: 12px; background: #fdf2f2; border-radius: 8px; border-left: 4px solid #e74c3c;";
+          item.innerHTML = `
+            <p style="margin:0; color:#333; font-weight:bold;">${n.message}</p>
+            <small style="color:#888;">${new Date(n.created_at).toLocaleString()}</small>
+          `;
+          notifList.appendChild(item);
+        });
+      }
+    } catch (err) {
+      notifList.innerHTML = "<p>Error loading alerts.</p>";
+    }
+  });
+}
+
+// 4. Close the Modal
+closeNotifModal.addEventListener("click", () => notifModal.classList.add("hidden"));
+window.addEventListener("click", (e) => {
+  if (e.target === notifModal) notifModal.classList.add("hidden");
+});
+
+// 5. Clear Alerts and reset the Bell
+markReadBtn.addEventListener("click", async () => {
+  try {
+    await fetch(`${API_URL}/api/mark-notifications-read/${currentUserId}`, { method: "POST" });
+    
+    // Hide the bell number and close the modal
+    const countBadge = document.getElementById("notifCount");
+    if(countBadge) countBadge.style.display = "none";
+    
+    notifModal.classList.add("hidden");
+    alert("Alerts cleared!");
+  } catch (err) {
+    console.error("Error clearing alerts", err);
+  }
+});
