@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-      <script src="config.js" defer></script>
-      <script src="request.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Requests - FoodSaver</title>
+  
+  <script src="config.js" defer></script>
+  <script src="request.js" defer></script>
 
-</head>
-<body>
-      <style>
+  <style>
     body {
       font-family: Arial;
       background: #f6f8fb;
       padding: 30px;
+      margin: 0;
     }
 
     .container {
@@ -31,6 +31,14 @@
       border-radius: 10px;
       margin-bottom: 12px;
       background: #fafafa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .food-info p {
+      margin: 6px 0;
+      color: #333;
     }
 
     button {
@@ -43,8 +51,33 @@
       margin-bottom: 20px;
     }
 
+    button:hover {
+      opacity: 0.8;
+    }
+
     .empty-text {
       color: #666;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+      text-transform: uppercase;
+    }
+    .status-pending { background: #f39c12; }
+    .status-approve { background: #27ae60; }
+    .status-decline { background: #e74c3c; }
+
+    @media (max-width: 600px) {
+      .history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
     }
   </style>
 </head>
@@ -53,10 +86,10 @@
     <button onclick="window.location.href='customer.html'">Back to Dashboard</button>
 
     <h2>My Requested Food</h2>
-    <div id="historyList"></div>
+    <div id="historyList" style="margin-top: 20px;">
+      <p class="empty-text">Loading your requests...</p>
+    </div>
   </div>
-</body>
-</html>
 </body>
 </html>
 
