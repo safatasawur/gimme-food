@@ -592,60 +592,6 @@ def customer_requests(customer_id):
         conn.close()
 
 # =====================================================
-# UPDATE REQUEST STATUS (APPROVE / DECLINE)
-# =====================================================
-@app.route("/api/update-request", methods=["POST"])
-def update_request():
-    conn = get_db_connection()
-    if conn is None:
-        return jsonify({"error": "DB Down"}), 500
-
-    data = request.json or {}
-    request_id = data.get("request_id")
-    new_status = data.get("status") # This will be 'approve' or 'decline'
-
-    try:
-        with conn.cursor() as cursor:
-            # 1. Update the status in the requests table
-            cursor.execute("""
-            UPDATE requests 
-            SET status = %s 
-            WHERE id = %s
-            """, (new_status, request_id))
-
-            # 2. Find out who the customer is so we can notify them
-            cursor.execute("""
-            SELECT requests.customer_id, menu_items.name 
-            FROM requests
-            JOIN menu_items ON requests.food_id = menu_items.id
-            WHERE requests.id = %s
-            """, (request_id,))
-            
-            req_info = cursor.fetchone()
-            
-            # 3. Create and send the notification to the customer's bell!
-            if req_info:
-                customer_id = req_info.get('customer_id')
-                food_name = req_info.get('name')
-                
-                if new_status == 'approve' or new_status == 'approved':
-                    message = f"Great news! Your request for '{food_name}' was APPROVED."
-                else:
-                    message = f"Sorry, your request for '{food_name}' was declined."
-                    
-                cursor.execute("""
-                INSERT INTO notifications (user_id, message)
-                VALUES (%s, %s)
-                """, (customer_id, message))
-
-        conn.commit()
-        return jsonify({"message": "Status updated successfully"})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-    finally:
-        conn.close()
-# =====================================================
 # START APP
 # =====================================================
 
