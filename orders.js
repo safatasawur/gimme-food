@@ -13,7 +13,7 @@ const requestsGrid = document.getElementById("requestsGrid");
 const notifCount = document.getElementById("notifCount");
 const notificationBell = document.getElementById("notificationBell");
 
-window.logout = function () {
+window.logout = function() {
   localStorage.clear();
   window.location.href = "index.html";
 };
@@ -35,20 +35,18 @@ async function loadOwnerRequests() {
       return;
     }
 
-    requests.forEach((req) => {
+    requests.forEach(req => {
       const card = document.createElement("div");
       card.className = "food-card";
-
+      
       // Dynamic border color based on status
       let borderColor = "#f39c12"; // Pending (Orange)
-      if (req.status === "approve" || req.status === "approved")
-        borderColor = "#27ae60"; // Green
-      if (req.status === "decline" || req.status === "declined")
-        borderColor = "#e74c3c"; // Red
+      if (req.status === 'approve' || req.status === 'approved') borderColor = "#27ae60"; // Green
+      if (req.status === 'decline' || req.status === 'declined') borderColor = "#e74c3c"; // Red
       card.style.borderLeft = `4px solid ${borderColor}`;
 
       let actionButtons = "";
-      if (req.status === "pending") {
+      if (req.status === 'pending') {
         actionButtons = `
           <div style="display: flex; gap: 10px; margin-top: 15px;">
             <button onclick="updateRequestStatus(${req.id || req.req_id}, 'approve')" style="flex:1; background:#27ae60; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;">Approve</button>
@@ -56,10 +54,7 @@ async function loadOwnerRequests() {
           </div>
         `;
       } else {
-        const displayStatus =
-          req.status === "approve" || req.status === "approved"
-            ? "Approved"
-            : "Declined";
+        const displayStatus = (req.status === 'approve' || req.status === 'approved') ? "Approved" : "Declined";
         actionButtons = `
           <div style="margin-top: 15px; text-align: center; padding: 10px; background: #f9fafb; border-radius: 8px; font-weight: bold; color: ${borderColor};">
             Status: ${displayStatus}
@@ -83,19 +78,19 @@ async function loadOwnerRequests() {
 }
 
 // =====================================================
-// 2. UPDATE ORDER STATUS
+// 2. UPDATE ORDER STATUS (WIRED TO YOUR EXACT PYTHON ROUTES)
 // =====================================================
-window.updateRequestStatus = async function (requestId, newStatus) {
+window.updateRequestStatus = async function(requestId, newStatus) {
   try {
-    // IMPORTANT: If your Python route for approving requests is named differently, update this URL!
-    const resp = await fetch(`${API_URL}/api/update-request`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ request_id: requestId, status: newStatus }),
+    // Check if we are approving or declining to hit the right Python route
+    const endpoint = newStatus === 'approve' ? `/api/approve-request/${requestId}` : `/api/decline-request/${requestId}`;
+    
+    const resp = await fetch(`${API_URL}${endpoint}`, {
+      method: "POST"
     });
 
     if (!resp.ok) throw new Error("Failed to update status");
-    loadOwnerRequests(); // Refresh the board instantly to show the new color
+    loadOwnerRequests(); // Refresh the board instantly to show the green or red badge
   } catch (err) {
     console.error("Error updating status:", err);
     alert("There was an error updating the order status.");
@@ -105,7 +100,7 @@ window.updateRequestStatus = async function (requestId, newStatus) {
 // =====================================================
 // 3. SLEEK NOTIFICATION DROPDOWN MENU
 // =====================================================
-const notifStyle = document.createElement("style");
+const notifStyle = document.createElement('style');
 notifStyle.innerHTML = `
   .notif-dropdown { position: absolute; top: 50px; right: 0; width: 320px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e5e7eb; z-index: 9999; display: none; flex-direction: column; overflow: hidden; }
   .notif-dropdown.show { display: flex; }
@@ -120,17 +115,14 @@ notifStyle.innerHTML = `
 document.head.appendChild(notifStyle);
 
 if (notificationBell && notificationBell.parentElement) {
-  notificationBell.parentElement.style.position = "relative";
-  notificationBell.parentElement.insertAdjacentHTML(
-    "beforeend",
-    `
+  notificationBell.parentElement.style.position = "relative"; 
+  notificationBell.parentElement.insertAdjacentHTML('beforeend', `
     <div class="notif-dropdown" id="notifDropdown">
       <div class="notif-header"><span>Alerts</span><button id="closeNotifDropdown" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">&times;</button></div>
       <div class="notif-body" id="notifList"><p style="padding: 10px; color: #666; text-align: center;">Loading...</p></div>
       <div class="notif-footer"><button class="clear-btn" id="markReadBtn">Clear All Alerts</button></div>
     </div>
-  `,
-  );
+  `);
 }
 
 const notifDropdown = document.getElementById("notifDropdown");
@@ -143,56 +135,34 @@ if (notificationBell && notifDropdown) {
     e.preventDefault();
     notifDropdown.classList.toggle("show");
     if (!notifDropdown.classList.contains("show")) return;
-    notifList.innerHTML =
-      "<p style='padding: 10px; color: #666; text-align: center;'>Loading...</p>";
+    notifList.innerHTML = "<p style='padding: 10px; color: #666; text-align: center;'>Loading...</p>";
     try {
       const resp = await fetch(`${API_URL}/api/notifications/${currentUserId}`);
       const notifications = await resp.json();
-      const unread = notifications.filter(
-        (n) => n.is_read === 0 || n.is_read === false,
-      );
+      const unread = notifications.filter(n => n.is_read === 0 || n.is_read === false);
       if (unread.length === 0) {
-        notifList.innerHTML =
-          "<p style='padding: 10px; color:#666; text-align:center;'>No new alerts.</p>";
+        notifList.innerHTML = "<p style='padding: 10px; color:#666; text-align:center;'>No new alerts.</p>";
       } else {
         notifList.innerHTML = "";
-        unread.forEach((n) => {
+        unread.forEach(n => {
           const item = document.createElement("div");
           item.className = "notif-item";
           item.innerHTML = `<p style="margin:0; color:#333; font-weight:bold; font-size: 14px;">${n.message}</p><small style="color:#888; font-size: 11px;">${new Date(n.created_at).toLocaleString()}</small>`;
           notifList.appendChild(item);
         });
       }
-    } catch (err) {
-      notifList.innerHTML =
-        "<p style='padding: 10px; color:#e74c3c; text-align:center;'>Error loading alerts.</p>";
-    }
+    } catch (err) { notifList.innerHTML = "<p style='padding: 10px; color:#e74c3c; text-align:center;'>Error loading alerts.</p>"; }
   });
 
-  if (closeNotifDropdown)
-    closeNotifDropdown.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  if (closeNotifDropdown) closeNotifDropdown.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); notifDropdown.classList.remove("show"); });
+  window.addEventListener("click", (e) => { if (notifDropdown.classList.contains("show") && !notificationBell.contains(e.target) && !notifDropdown.contains(e.target)) notifDropdown.classList.remove("show"); });
+  if (markReadBtn) markReadBtn.addEventListener("click", async () => {
+    try {
+      await fetch(`${API_URL}/api/mark-notifications-read/${currentUserId}`, { method: "POST" });
+      if(notifCount) notifCount.style.display = "none";
       notifDropdown.classList.remove("show");
-    });
-  window.addEventListener("click", (e) => {
-    if (
-      notifDropdown.classList.contains("show") &&
-      !notificationBell.contains(e.target) &&
-      !notifDropdown.contains(e.target)
-    )
-      notifDropdown.classList.remove("show");
+    } catch (err) {}
   });
-  if (markReadBtn)
-    markReadBtn.addEventListener("click", async () => {
-      try {
-        await fetch(`${API_URL}/api/mark-notifications-read/${currentUserId}`, {
-          method: "POST",
-        });
-        if (notifCount) notifCount.style.display = "none";
-        notifDropdown.classList.remove("show");
-      } catch (err) {}
-    });
 }
 
 async function checkNotifications() {
@@ -201,9 +171,7 @@ async function checkNotifications() {
     const resp = await fetch(`${API_URL}/api/notifications/${currentUserId}`);
     if (!resp.ok) return;
     const notifications = await resp.json();
-    const unread = notifications.filter(
-      (n) => n.is_read === 0 || n.is_read === false,
-    );
+    const unread = notifications.filter(n => n.is_read === 0 || n.is_read === false);
     if (unread.length > 0) {
       notifCount.style.display = "inline";
       notifCount.innerText = `(${unread.length})`;
