@@ -16,13 +16,13 @@
       font-family: Arial, sans-serif;
     }
 
-     body {
-  background: #f6f8fb;
-  color: #111;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh; 
-}
+    body {
+      background: #f6f8fb;
+      color: #111;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh; 
+    }
 
     .topbar {
       display: flex;
@@ -59,14 +59,13 @@
       color: #111;
     }
 
-  .page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 30px 20px 50px;
-  /* Add these 2 lines */
-  flex: 1; 
-  width: 100%;
-}
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px 50px;
+      flex: 1; 
+      width: 100%;
+    }
 
     .hero {
       display: flex;
@@ -308,14 +307,14 @@
     }
 
     footer {
-  background: black;
-  color: white;
-  padding: 25px 20px;
-  text-align: center;
-  margin-top: 40px;
-  font-size: 13px;
-  width: 100%;
-}
+      background: black;
+      color: white;
+      padding: 25px 20px;
+      text-align: center;
+      margin-top: 40px;
+      font-size: 13px;
+      width: 100%;
+    }
 
     /* Mobile Responsiveness */
     @media (max-width: 768px) {
@@ -351,11 +350,10 @@
     <div class="logo">FoodSaver</div>
 
     <nav class="nav">
-      <a href="#">Dashboard</a>
-      <a href="#">Inventory</a>
-      <a href="#">Orders</a>
+      <!-- UPDATED NAV LINKS -->
+      <a href="owner.html" style="font-weight: bold; border-bottom: 2px solid #111;">Inventory</a>
+      <a href="orders.html">Orders</a>
       
-      <!-- FIXED: Added id="notificationBell" and flexbox for icon alignment -->
       <a href="#" id="notificationBell" style="display:flex; align-items:center; gap:5px; text-decoration: none; font-weight: bold;">
          Alerts <span id="notifCount" style="color:#e74c3c; display:none;">(0)</span>
       </a>
@@ -366,14 +364,6 @@
   </header>
 
   <main class="page">
-
-    <!-- FIXED: Moved Pending Requests OUTSIDE of the hero section -->
-    <section class="filters-section" style="margin-bottom: 40px; border-bottom: 2px dashed #e5e7eb; padding-bottom: 25px;">
-      <h2>Pending Food Requests</h2>
-      <div class="inventory-grid" id="requestsGrid">
-        <p style="color: #666;">Loading requests...</p>
-      </div>
-    </section>
 
     <!-- Hero Section -->
     <section class="hero">
