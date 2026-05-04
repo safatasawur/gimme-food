@@ -184,34 +184,93 @@ setInterval(checkNotifications, 10000);
 setInterval(loadFoodFromServer, 10000);
 
 // =====================================================
-// NOTIFICATION POPUP WINDOW
+// SLEEK NOTIFICATION DROPDOWN MENU
 // =====================================================
 
-// 1. Dynamically create the Modal in the HTML so we don't have to edit the HTML files
-document.body.insertAdjacentHTML('beforeend', `
-  <div class="modal hidden" id="notifModal">
-    <div class="modal-content">
-      <button class="close-btn" id="closeNotifModal">&times;</button>
-      <h2>Your Alerts</h2>
-      <div id="notifList" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;"></div>
-      <button class="primary-btn" id="markReadBtn" style="margin-top: 20px; width: 100%; background: #e74c3c; border:none;">Clear All Alerts</button>
-    </div>
-  </div>
-`);
+// 1. Inject custom CSS so it looks perfect on both pages
+const notifStyle = document.createElement('style');
+notifStyle.innerHTML = `
+  .notif-dropdown {
+    position: absolute;
+    top: 50px; /* Drops right below the bell */
+    right: 0;
+    width: 320px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    border: 1px solid #e5e7eb;
+    z-index: 9999;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .notif-dropdown.show { display: flex; }
+  .notif-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #111;
+  }
+  .notif-body { max-height: 300px; overflow-y: auto; padding: 10px; }
+  .notif-item {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: #fdf2f2;
+    border-left: 4px solid #e74c3c;
+  }
+  .notif-item:last-child { margin-bottom: 0; }
+  .notif-footer { padding: 10px; border-top: 1px solid #e5e7eb; background: #f9fafb; }
+  .clear-btn {
+    width: 100%; padding: 10px; background: #e74c3c; color: white;
+    border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+  }
+  .clear-btn:hover { background: #c0392b; }
+`;
+document.head.appendChild(notifStyle);
 
-// 2. Grab the elements
-const notifModal = document.getElementById("notifModal");
-const closeNotifModal = document.getElementById("closeNotifModal");
+// 2. Build the HTML and attach it exactly to the navigation area
+const bell = document.getElementById("notificationBell");
+
+if (bell && bell.parentElement) {
+  // Force the navigation container to hold the dropdown properly
+  bell.parentElement.style.position = "relative"; 
+  
+  bell.parentElement.insertAdjacentHTML('beforeend', `
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-header">
+        <span>Alerts</span>
+        <button id="closeNotifDropdown" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">&times;</button>
+      </div>
+      <div class="notif-body" id="notifList">
+        <p style="padding: 10px; color: #666; text-align: center;">Loading...</p>
+      </div>
+      <div class="notif-footer">
+        <button class="clear-btn" id="markReadBtn">Clear All Alerts</button>
+      </div>
+    </div>
+  `);
+}
+
+// 3. Add the logic to open, close, and clear
+const notifDropdown = document.getElementById("notifDropdown");
+const closeNotifDropdown = document.getElementById("closeNotifDropdown");
 const notifList = document.getElementById("notifList");
-const notificationBell = document.getElementById("notificationBell");
 const markReadBtn = document.getElementById("markReadBtn");
 
-// 3. Open modal and load messages when Bell is clicked
-if (notificationBell) {
-  notificationBell.addEventListener("click", async (e) => {
+if (bell && notifDropdown) {
+  // Open/Close when clicking the bell
+  bell.addEventListener("click", async (e) => {
     e.preventDefault();
-    notifList.innerHTML = "<p>Loading...</p>";
-    notifModal.classList.remove("hidden");
+    notifDropdown.classList.toggle("show");
+    
+    // Only load if opening
+    if (!notifDropdown.classList.contains("show")) return;
+
+    notifList.innerHTML = "<p style='padding: 10px; color: #666; text-align: center;'>Loading...</p>";
 
     try {
       const resp = await fetch(`${API_URL}/api/notifications/${currentUserId}`);
@@ -219,43 +278,51 @@ if (notificationBell) {
       const unread = notifications.filter(n => n.is_read === 0 || n.is_read === false);
 
       if (unread.length === 0) {
-        notifList.innerHTML = "<p style='color:#666;'>No new alerts.</p>";
+        notifList.innerHTML = "<p style='padding: 10px; color:#666; text-align:center;'>No new alerts.</p>";
       } else {
         notifList.innerHTML = "";
         unread.forEach(n => {
           const item = document.createElement("div");
-          item.style = "padding: 12px; background: #fdf2f2; border-radius: 8px; border-left: 4px solid #e74c3c;";
+          item.className = "notif-item";
           item.innerHTML = `
-            <p style="margin:0; color:#333; font-weight:bold;">${n.message}</p>
-            <small style="color:#888;">${new Date(n.created_at).toLocaleString()}</small>
+            <p style="margin:0; color:#333; font-weight:bold; font-size: 14px;">${n.message}</p>
+            <small style="color:#888; font-size: 11px;">${new Date(n.created_at).toLocaleString()}</small>
           `;
           notifList.appendChild(item);
         });
       }
     } catch (err) {
-      notifList.innerHTML = "<p>Error loading alerts.</p>";
+      notifList.innerHTML = "<p style='padding: 10px; color:#e74c3c; text-align:center;'>Error loading alerts.</p>";
     }
   });
-}
 
-// 4. Close the Modal
-closeNotifModal.addEventListener("click", () => notifModal.classList.add("hidden"));
-window.addEventListener("click", (e) => {
-  if (e.target === notifModal) notifModal.classList.add("hidden");
-});
-
-// 5. Clear Alerts and reset the Bell
-markReadBtn.addEventListener("click", async () => {
-  try {
-    await fetch(`${API_URL}/api/mark-notifications-read/${currentUserId}`, { method: "POST" });
-    
-    // Hide the bell number and close the modal
-    const countBadge = document.getElementById("notifCount");
-    if(countBadge) countBadge.style.display = "none";
-    
-    notifModal.classList.add("hidden");
-    alert("Alerts cleared!");
-  } catch (err) {
-    console.error("Error clearing alerts", err);
+  // Close when clicking the "X"
+  if (closeNotifDropdown) {
+    closeNotifDropdown.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // Stop click from jumping to bell
+      notifDropdown.classList.remove("show");
+    });
   }
-});
+
+  // Close when clicking anywhere outside the dropdown
+  window.addEventListener("click", (e) => {
+    if (notifDropdown.classList.contains("show") && !bell.contains(e.target) && !notifDropdown.contains(e.target)) {
+      notifDropdown.classList.remove("show");
+    }
+  });
+
+  // Clear Alerts
+  if (markReadBtn) {
+    markReadBtn.addEventListener("click", async () => {
+      try {
+        await fetch(`${API_URL}/api/mark-notifications-read/${currentUserId}`, { method: "POST" });
+        const countBadge = document.getElementById("notifCount");
+        if(countBadge) countBadge.style.display = "none";
+        notifDropdown.classList.remove("show");
+      } catch (err) {
+        console.error("Error clearing alerts", err);
+      }
+    });
+  }
+}
