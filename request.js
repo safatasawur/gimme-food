@@ -32,23 +32,23 @@ async function renderRequestHistory() {
       item.className = "history-item";
 
       // Determine the correct color badge based on the database status
-      let badgeClass = "status-pending";
-      let displayStatus = "Pending";
+let badgeClass = "status-pending";
+let displayStatus = t("pendingStatus");
 
-      if (request.status === "approve" || request.status === "approved") {
-        badgeClass = "status-approve"; 
-        displayStatus = "Approved!";
-      } else if (request.status === "decline" || request.status === "declined") {
-        badgeClass = "status-decline"; 
-        displayStatus = "Declined";
-      }
+if (request.status === "approve" || request.status === "approved") {
+  badgeClass = "status-approve"; 
+  displayStatus = t("approvedStatus");
+} else if (request.status === "decline" || request.status === "declined") {
+  badgeClass = "status-decline"; 
+  displayStatus = t("declinedStatus");
+}
 
       item.innerHTML = `
         <div class="food-info">
           <p style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">${request.name}</p>
-          <p><strong>Restaurant:</strong> ${request.restaurant}</p>
-          <p><strong>Type:</strong> ${request.type.charAt(0).toUpperCase() + request.type.slice(1)}</p>
-          <p><strong>Requested On:</strong> ${new Date(request.created_at).toLocaleString()}</p>
+          <p><strong>${t("restaurantLabel")}</strong> ${request.restaurant}</p>
+          <p><strong>${t("typeLabel")}</strong> ${request.type.charAt(0).toUpperCase() + request.type.slice(1)}</p>
+          <p><strong>${t("requestedOnLabel")}</strong> ${new Date(request.created_at).toLocaleString()}</p>
         </div>
         <div>
           <span class="status-badge ${badgeClass}">${displayStatus}</span>

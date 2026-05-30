@@ -4,205 +4,349 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Customer Orders - FoodSaver</title>
-
+ <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="config.js" defer></script>
-    <script src="orders.js" defer></script>
+    <script src="i18n.js" defer></script>
 
-    <style>
-      /* Exact same CSS styling so the pages perfectly match */
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: Arial, sans-serif;
+    <script src="orders.js" defer></script>
+      <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --c-bg: #0a0a0f;
+        --c-surface: #13131a;
+        --c-surface-2: #1a1a24;
+        --c-border: #2a2a3a;
+        --c-text: #f0f0f5;
+        --c-muted: #8888a0;
+        --c-accent: #22c55e;
+        --c-accent-glow: rgba(34,197,94,0.25);
+        --c-danger: #ef4444;
+        --c-warning: #f59e0b;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --radius-lg: 20px;
+        --font: 'Inter', sans-serif;
+        --ease: cubic-bezier(0.4,0,0.2,1);
       }
+
       body {
-        background: #f6f8fb;
-        color: #222;
+        font-family: var(--font);
+        background: var(--c-bg);
+        color: var(--c-text);
         display: flex;
         flex-direction: column;
         min-height: 100vh;
+        line-height: 1.6;
       }
 
       .topbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 20px 40px;
-        background: #ffffff;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 0 48px;
+        background: rgba(10,10,15,0.85);
+        backdrop-filter: blur(24px);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        height: 64px;
         position: sticky;
         top: 0;
         z-index: 100;
       }
+
       .logo {
-        font-size: 1.5rem;
-        font-weight: bold;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: var(--c-text);
       }
 
       .nav {
         display: flex;
-        gap: 20px;
+        gap: 4px;
         align-items: center;
         position: relative;
       }
+
       .nav a {
         text-decoration: none;
-        color: #444;
+        color: var(--c-muted);
         font-weight: 500;
-        transition: color 0.2s;
+        font-size: 14px;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        transition: all 0.2s var(--ease);
       }
-      .nav a:hover {
-        color: #111;
+
+      .nav a:hover { color: var(--c-text); background: rgba(255,255,255,0.05); }
+      .nav a.active { color: var(--c-accent); font-weight: 700; background: rgba(34,197,94,0.1); }
+
+      .nav-btn {
+        background: var(--c-surface);
+        color: var(--c-text);
+        border: 1px solid var(--c-border);
+        padding: 8px 16px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-family: var(--font);
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s var(--ease);
+        white-space: nowrap;
       }
+
+      .nav-btn:hover { border-color: var(--c-accent); color: var(--c-accent); transform: translateY(-1px); }
+      .nav-btn.danger { border-color: rgba(239,68,68,0.3); color: #f87171; }
+      .nav-btn.danger:hover { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+
+      .language-select {
+        appearance: none;
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        color: var(--c-text);
+        font-family: var(--font);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.2s var(--ease);
+      }
+
+      .language-select:hover { border-color: var(--c-accent); }
 
       .page {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 30px 20px 50px;
+        padding: 32px 24px 64px;
         flex: 1;
         width: 100%;
       }
 
       .hero {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 30px;
-        background: #ffffff;
-        padding: 30px;
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        background: linear-gradient(135deg, var(--c-surface) 0%, var(--c-surface-2) 100%);
+        border: 1px solid var(--c-border);
+        border-radius: var(--radius-lg);
+        padding: 44px 48px;
+        margin-bottom: 32px;
+        color: var(--c-text);
+        position: relative;
+        overflow: hidden;
       }
+
+      .hero::before {
+        content: '';
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, var(--c-accent-glow) 0%, transparent 70%);
+        top: -100px;
+        right: -50px;
+        pointer-events: none;
+      }
+
       .hero h1 {
-        font-size: 2rem;
+        font-size: 2.2rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
         margin-bottom: 10px;
-      }
-      .hero p {
-        color: #666;
-      }
-
-      .primary-btn {
-        background: #222;
-        color: white;
-        border: none;
-        padding: 12px 18px;
-        border-radius: 10px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: opacity 0.2s;
-      }
-      .primary-btn:hover {
-        opacity: 0.9;
+        position: relative;
+        background: linear-gradient(135deg, #f0f0f5, #a0a0b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
       }
 
-      .filters-section {
-        margin-bottom: 25px;
-      }
+      .hero p { color: var(--c-muted); font-size: 15px; position: relative; }
+
+      .filters-section { margin-bottom: 8px; }
+
       .inventory-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 20px;
       }
 
       .food-card {
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-        border: 1px solid #eef1f4;
-        transition: transform 0.2s ease;
+        background: var(--c-surface);
+        border-radius: var(--radius);
+        padding: 24px;
+        border: 1px solid var(--c-border);
+        transition: all 0.3s var(--ease);
+        position: relative;
+        overflow: hidden;
       }
+
+      .food-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--c-accent), #3b82f6);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .food-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(34,197,94,0.3);
+        box-shadow: 0 16px 48px rgba(0,0,0,0.3), 0 0 40px var(--c-accent-glow);
+      }
+
+      .food-card:hover::before { opacity: 1; }
+
       .food-card h3 {
-        font-size: 1.15rem;
-        font-weight: bold;
+        font-size: 18px;
+        font-weight: 700;
         margin-bottom: 10px;
+        letter-spacing: -0.2px;
       }
+
       .food-card p {
         margin-bottom: 8px;
-        color: #555;
-        font-size: 0.95rem;
+        color: var(--c-muted);
+        font-size: 14px;
+      }
+
+      .btn-approve {
+        flex: 1;
+        padding: 11px;
+        background: rgba(34,197,94,0.15);
+        color: #4ade80;
+        border: 1px solid rgba(34,197,94,0.3);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-family: var(--font);
+        font-weight: 700;
+        font-size: 14px;
+        transition: all 0.2s var(--ease);
+      }
+
+      .btn-approve:hover { background: rgba(34,197,94,0.25); border-color: #22c55e; transform: translateY(-1px); }
+
+      .btn-decline {
+        flex: 1;
+        padding: 11px;
+        background: rgba(239,68,68,0.12);
+        color: #f87171;
+        border: 1px solid rgba(239,68,68,0.25);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-family: var(--font);
+        font-weight: 700;
+        font-size: 14px;
+        transition: all 0.2s var(--ease);
+      }
+
+      .btn-decline:hover { background: rgba(239,68,68,0.2); border-color: #ef4444; transform: translateY(-1px); }
+
+      .status-display {
+        margin-top: 16px;
+        padding: 14px;
+        background: var(--c-surface-2);
+        border-radius: var(--radius-sm);
+        text-align: center;
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--c-muted);
+        border: 1px solid var(--c-border);
+      }
+
+      footer {
+        background: var(--c-surface);
+        color: var(--c-muted);
+        padding: 24px 20px;
+        text-align: center;
+        font-size: 13px;
+        border-top: 1px solid var(--c-border);
       }
 
       @media (max-width: 768px) {
-        .topbar {
-          flex-direction: column;
-          gap: 15px;
-          padding: 20px;
-          align-items: center;
-        }
-        .nav {
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: 12px;
-        }
-        .hero {
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-        }
+        .topbar { padding: 14px 20px; height: auto; flex-direction: column; gap: 12px; align-items: center; }
+        .nav { flex-wrap: wrap; justify-content: center; gap: 8px; }
+        .hero { padding: 32px 24px; }
+        .hero h1 { font-size: 1.5rem; }
       }
+      .status-display {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 700;
+  border: 1px solid;
+}
+
+.status-approved {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.status-declined {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
     </style>
-  </head>
+      </head>
+ 
 
-  <body>
-    <header class="topbar">
-      <div class="logo">FoodSaver</div>
-      <nav class="nav">
-        <a href="owner.html">Inventory</a>
-        <a
-          href="orders.html"
-          style="font-weight: bold; border-bottom: 2px solid #111"
-          >Orders</a
-        >
+<body>
+  <header class="topbar">
+<div class="logo">&#127807; FoodSaver</div>
+    <nav class="nav">
+      <a href="owner.html" data-i18n="inventory">Inventory</a>
 
-        <a
-          href="#"
-          id="notificationBell"
-          style="
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            text-decoration: none;
-            font-weight: bold;
-          "
-        >
-          Alerts
-          <span id="notifCount" style="color: #e74c3c; display: none">(0)</span>
-        </a>
+      <!-- <a
+        href="orders.html"
+        style="font-weight: bold; border-bottom: 2px solid #111"
+        data-i18n="orders"
+      >
+        Orders
+      </a> -->
+      <a href="orders.html" class="active" data-i18n="orders">Orders</a>
 
-        <a href="profile.html">Profile</a>
-        <button
-          class="primary-btn"
-          onclick="logout()"
-          style="
-            background: #e74c3c;
-            border: none;
-            padding: 8px 15px;
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-          "
-        >
-          Logout
-        </button>
-      </nav>
-    </header>
+     <a href="#" id="notificationBell">
+        <span data-i18n="alerts">Alerts</span>
+        <span id="notifCount" style="color: #e74c3c; display: none">(0)</span>
+      </a>
 
-    <main class="page">
-      <section class="hero">
-        <div>
-          <h1>Customer Orders</h1>
-          <p>Review and manage incoming food requests from customers.</p>
-        </div>
-      </section>
+      <a href="profile.html" data-i18n="profile">Profile</a>
+<select id="languageSelector" class="language-select">
+        <option value="en">English</option>
+        <option value="tr">Türkçe</option>
+      </select>
 
-      <section class="filters-section">
-        <div class="inventory-grid" id="requestsGrid">
-          <p style="color: #666">Loading requests...</p>
-        </div>
-      </section>
-    </main>
-  </body>
+     <button class="nav-btn danger" onclick="logout()" data-i18n="logout">
+  Logout
+</button>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div>
+        <h1 data-i18n="customerOrders">Customer Orders</h1>
+        <p data-i18n="ordersHeroText">
+          Review and manage incoming food requests from customers.
+        </p>
+      </div>
+    </section>
+
+    <section class="filters-section">
+      <div class="inventory-grid" id="requestsGrid">
+       <p style="color: var(--c-muted); font-size: 15px; text-align: center; padding: 64px 0; grid-column: 1 / -1;" data-i18n="loadingRequests">
+  Loading requests...
+</p>
+      </div>
+    </section>
+  </main>
+<footer>
+  &copy; 2026 FoodSaver. All rights reserved.
+</footer>
+</body>
 </html>

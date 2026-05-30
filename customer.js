@@ -13,6 +13,40 @@ const typeFilter = document.getElementById("typeFilter");
 const categoryFilter = document.getElementById("categoryFilter");
 const logoutBtn = document.getElementById("logoutBtn");
 const notifCount = document.getElementById("notifCount");
+function translateNotificationMessage(message) {
+  if (!message) return "";
+
+  const key = message.toLowerCase();
+
+  if (key.includes("approved")) {
+    return t("requestApprovedNotification");
+  }
+
+  if (key.includes("declined")) {
+    return t("requestDeclinedNotification");
+  }
+
+  if (key.includes("new food request")) {
+    return t("newFoodRequest");
+  }
+
+  return message;
+}
+function translateFoodValue(value) {
+  if (!value) return "";
+
+  const key = value.toString().toLowerCase();
+
+  const map = {
+    meal: "meal",
+    bakery: "bakery",
+    beverage: "beverage",
+    discount: "discount",
+    free: "freeFood"
+  };
+
+  return t(map[key] || key);
+}
 
 function checkAccess() {
   const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -69,7 +103,7 @@ function renderFoodItems(items) {
   foodGrid.innerHTML = "";
 
   if (items.length === 0) {
-    foodGrid.innerHTML = `<p class="empty-text">No food items match your filters.</p>`;
+    foodGrid.innerHTML = `<p class="empty-text">${t("noFoodMatch")}</p>`;
     return;
   }
 
@@ -82,26 +116,25 @@ function renderFoodItems(items) {
     const isUnavailable = item.quantity < 1;
 
     let buttonHTML = "";
+if (hasRequested) {
+  // GREY OUT BUTTON IF ALREADY REQUESTED
+  buttonHTML = `<button class="request-btn" disabled style="background: #9ca3af; cursor: not-allowed; color: white;">${t("requested")}</button>`;
+} else if (isUnavailable) {
+  buttonHTML = `<button class="request-btn" disabled style="background: #9ca3af; cursor: not-allowed; color: white;">${t("notAvailable")}</button>`;
+} else {
+  // NORMAL BUTTON
+  buttonHTML = `<button class="request-btn" onclick="requestFood(${item.id}, ${item.owner_id}, this)">${t("requestOnePortion")}</button>`;
+}
 
-    if (hasRequested) {
-      // GREY OUT BUTTON IF ALREADY REQUESTED
-      buttonHTML = `<button class="request-btn" disabled style="background: #9ca3af; cursor: not-allowed; color: white;">Requested ✔</button>`;
-    } else if (isUnavailable) {
-      buttonHTML = `<button class="request-btn" disabled style="background: #9ca3af; cursor: not-allowed; color: white;">Not Available</button>`;
-    } else {
-      // NORMAL BUTTON (Pass 'this' so we can change the button instantly when clicked)
-      buttonHTML = `<button class="request-btn" onclick="requestFood(${item.id}, ${item.owner_id}, this)">Request One Portion</button>`;
-    }
-
-    card.innerHTML = `
-      <span class="badge ${getBadgeClass(item.type)}">${getBadgeLabel(item.type)}</span>
-      <h3>${item.name}</h3>
-      <p><strong>Restaurant:</strong> ${item.restaurant}</p>
-      <p><strong>Category:</strong> ${item.category}</p>
-      <p><strong>Expiry:</strong> ${item.expiry_date || 'N/A'}</p>
-      <p><strong>Available Portions:</strong> ${item.quantity}</p>
-      ${buttonHTML}
-    `;
+ card.innerHTML = `
+  <span class="badge ${getBadgeClass(item.type)}">${translateFoodValue(item.type)}</span>
+  <h3>${item.name}</h3>
+  <p><strong>${t("restaurantLabel")}</strong> ${item.restaurant}</p>
+  <p><strong>${t("categoryLabel")}</strong> ${translateFoodValue(item.category)}</p>
+  <p><strong>${t("expiryLabel")}</strong> ${item.expiry_date || 'N/A'}</p>
+  <p><strong>${t("availablePortionsLabel")}</strong> ${item.quantity}</p>
+  ${buttonHTML}
+`;
 
     foodGrid.appendChild(card);
   });
@@ -215,47 +248,134 @@ window.goToProfile = function () {
 // =====================================================
 
 // 1. Inject custom CSS so it looks perfect on both pages
+// const notifStyle = document.createElement('style');
+// notifStyle.innerHTML = `
+//   .notif-dropdown {
+//     position: absolute;
+//     top: 50px; /* Drops right below the bell */
+//     right: 0;
+//     width: 320px;
+//     background: white;
+//     border-radius: 12px;
+//     box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+//     border: 1px solid #e5e7eb;
+//     z-index: 9999;
+//     display: none; /* Hidden by default */
+//     flex-direction: column;
+//     overflow: hidden;
+//   }
+//   .notif-dropdown.show { display: flex; }
+//   .notif-header {
+//     padding: 15px 20px;
+//     border-bottom: 1px solid #e5e7eb;
+//     font-weight: bold;
+//     display: flex;
+//     justify-content: space-between;
+//     align-items: center;
+//     color: #111;
+//   }
+//   .notif-body { max-height: 300px; overflow-y: auto; padding: 10px; }
+//   .notif-item {
+//     padding: 12px;
+//     border-radius: 8px;
+//     margin-bottom: 8px;
+//     background: #fdf2f2;
+//     border-left: 4px solid #e74c3c;
+//   }
+//   .notif-item:last-child { margin-bottom: 0; }
+//   .notif-footer { padding: 10px; border-top: 1px solid #e5e7eb; background: #f9fafb; }
+//   .clear-btn {
+//     width: 100%; padding: 10px; background: #e74c3c; color: white;
+//     border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+//   }
+//   .clear-btn:hover { background: #c0392b; }
+// `;
+// document.head.appendChild(notifStyle);
+
 const notifStyle = document.createElement('style');
 notifStyle.innerHTML = `
   .notif-dropdown {
     position: absolute;
-    top: 50px; /* Drops right below the bell */
+    top: 50px;
     right: 0;
     width: 320px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-    border: 1px solid #e5e7eb;
+    background: #13131a;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    border: 1px solid #2a2a3a;
     z-index: 9999;
-    display: none; /* Hidden by default */
+    display: none;
     flex-direction: column;
     overflow: hidden;
   }
-  .notif-dropdown.show { display: flex; }
+
+  .notif-dropdown.show {
+    display: flex;
+  }
+
   .notif-header {
     padding: 15px 20px;
-    border-bottom: 1px solid #e5e7eb;
-    font-weight: bold;
+    border-bottom: 1px solid #2a2a3a;
+    font-weight: 800;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #111;
+    color: #f0f0f5;
+    background: #13131a;
   }
-  .notif-body { max-height: 300px; overflow-y: auto; padding: 10px; }
+
+  .notif-body {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #13131a;
+  }
+
   .notif-item {
     padding: 12px;
-    border-radius: 8px;
+    border-radius: 10px;
     margin-bottom: 8px;
-    background: #fdf2f2;
-    border-left: 4px solid #e74c3c;
+    background: rgba(34,197,94,0.10);
+    border-left: 4px solid #22c55e;
   }
-  .notif-item:last-child { margin-bottom: 0; }
-  .notif-footer { padding: 10px; border-top: 1px solid #e5e7eb; background: #f9fafb; }
+
+  .notif-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .notif-item p {
+    margin: 0;
+    color: #f0f0f5 !important;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .notif-item small {
+    color: #8888a0 !important;
+    font-size: 11px;
+  }
+
+  .notif-footer {
+    padding: 10px;
+    border-top: 1px solid #2a2a3a;
+    background: #13131a;
+  }
+
   .clear-btn {
-    width: 100%; padding: 10px; background: #e74c3c; color: white;
-    border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 800;
   }
-  .clear-btn:hover { background: #c0392b; }
+
+  .clear-btn:hover {
+    box-shadow: 0 8px 24px rgba(34,197,94,0.25);
+    transform: translateY(-1px);
+  }
 `;
 document.head.appendChild(notifStyle);
 
@@ -266,20 +386,20 @@ if (bell && bell.parentElement) {
   // Force the navigation container to hold the dropdown properly
   bell.parentElement.style.position = "relative"; 
   
-  bell.parentElement.insertAdjacentHTML('beforeend', `
-    <div class="notif-dropdown" id="notifDropdown">
-      <div class="notif-header">
-        <span>Alerts</span>
-        <button id="closeNotifDropdown" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">&times;</button>
-      </div>
-      <div class="notif-body" id="notifList">
-        <p style="padding: 10px; color: #666; text-align: center;">Loading...</p>
-      </div>
-      <div class="notif-footer">
-        <button class="clear-btn" id="markReadBtn">Clear All Alerts</button>
-      </div>
+bell.parentElement.insertAdjacentHTML('beforeend', `
+  <div class="notif-dropdown" id="notifDropdown">
+    <div class="notif-header">
+      <span>${t("alerts")}</span>
+      <button id="closeNotifDropdown" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">&times;</button>
     </div>
-  `);
+    <div class="notif-body" id="notifList">
+      <p style="padding: 10px; color: #666; text-align: center;">${t("loading")}</p>
+    </div>
+    <div class="notif-footer">
+      <button class="clear-btn" id="markReadBtn">${t("clearAllAlerts")}</button>
+    </div>
+  </div>
+`);
 }
 
 // 3. Add the logic to open, close, and clear
@@ -312,7 +432,7 @@ if (bell && notifDropdown) {
           const item = document.createElement("div");
           item.className = "notif-item";
           item.innerHTML = `
-            <p style="margin:0; color:#333; font-weight:bold; font-size: 14px;">${n.message}</p>
+            <p style="margin:0; color:#333; font-weight:bold; font-size: 14px;">${translateNotificationMessage(n.message)}</p>
             <small style="color:#888; font-size: 11px;">${new Date(n.created_at).toLocaleString()}</small>
           `;
           notifList.appendChild(item);

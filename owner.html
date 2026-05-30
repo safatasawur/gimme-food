@@ -4,11 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Restaurant Inventory</title>
-
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="config.js" defer></script>
+    <script src="i18n.js" defer></script>
+
   <script src="owner.js" defer></script>
 
-  <style>
+  <!-- <style>
     * {
       margin: 0;
       padding: 0;
@@ -315,8 +319,43 @@
       font-size: 13px;
       width: 100%;
     }
+        .language-selector {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+ .language-select {
+  display: inline-block;
+  width: auto;
+  color: white;
+  background: #3498db;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+} 
+ .language-select {
+  display: inline-block;
+  width: auto;
+  color: white;
+  background: #111;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
 
-    /* Mobile Responsiveness */
+.language-select:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+   
     @media (max-width: 768px) {
       .topbar {
         flex-direction: column;
@@ -341,25 +380,516 @@
         font-size: 1.5rem;
       }
     }
+  </style> -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --c-bg: #0a0a0f;
+      --c-surface: #13131a;
+      --c-surface-2: #1a1a24;
+      --c-border: #2a2a3a;
+      --c-text: #f0f0f5;
+      --c-muted: #8888a0;
+      --c-accent: #22c55e;
+      --c-accent-glow: rgba(34,197,94,0.25);
+      --c-danger: #ef4444;
+      --c-warning: #f59e0b;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --radius-lg: 20px;
+      --font: 'Inter', sans-serif;
+      --ease: cubic-bezier(0.4,0,0.2,1);
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--c-bg);
+      color: var(--c-text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      /* padding: 0 48px; */
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      /* height: 64px; */
+      position: sticky;
+      top: 0;
+      z-index: 100;
+       padding: 10px 48px;
+  min-height: 100px;
+  height: auto;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--c-text);
+    }
+.logo-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--c-text) !important;
+  text-decoration: none !important;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.logo-link:visited,
+.logo-link:hover,
+.logo-link:active {
+  color: var(--c-text) !important;
+  text-decoration: none !important;
+}
+
+.logo-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+    .nav {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      position: relative;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: var(--c-muted);
+      font-weight: 500;
+      font-size: 14px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s var(--ease);
+    }
+
+    .nav a:hover { color: var(--c-text); background: rgba(255,255,255,0.05); }
+    .nav a.active { color: var(--c-accent); font-weight: 700; background: rgba(34,197,94,0.1); }
+
+    .nav-btn {
+      background: var(--c-surface);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s var(--ease);
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover { border-color: var(--c-accent); color: var(--c-accent); transform: translateY(-1px); }
+    .nav-btn.danger { border-color: rgba(239,68,68,0.3); color: #f87171; }
+    .nav-btn.danger:hover { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+
+    .language-select {
+      appearance: none;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      color: var(--c-text);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s var(--ease);
+    }
+
+    .language-select:hover { border-color: var(--c-accent); }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+      flex: 1;
+      width: 100%;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 32px;
+      background: linear-gradient(135deg, var(--c-surface) 0%, var(--c-surface-2) 100%);
+      padding: 44px 48px;
+      border-radius: var(--radius-lg);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, var(--c-accent-glow) 0%, transparent 70%);
+      top: -100px;
+      right: -50px;
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      position: relative;
+      background: linear-gradient(135deg, #f0f0f5, #a0a0b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p { color: var(--c-muted); font-size: 15px; position: relative; }
+
+    .primary-btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 700;
+      transition: all 0.25s var(--ease);
+      white-space: nowrap;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .primary-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px var(--c-accent-glow); }
+
+    .filters-section { margin-bottom: 24px; }
+
+    .filters-section h2 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      letter-spacing: -0.2px;
+    }
+
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .filter-btn {
+      padding: 8px 18px;
+      border: 1px solid var(--c-border);
+      background: var(--c-surface);
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-muted);
+      transition: all 0.2s var(--ease);
+    }
+
+    .filter-btn:hover { border-color: var(--c-accent); color: var(--c-accent); }
+    .filter-btn.active {
+      background: var(--c-accent);
+      color: white;
+      border-color: var(--c-accent);
+      box-shadow: 0 4px 16px var(--c-accent-glow);
+    }
+
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .food-card {
+      background: var(--c-surface);
+      border-radius: var(--radius);
+      padding: 24px;
+      border: 1px solid var(--c-border);
+      transition: all 0.3s var(--ease);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .food-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--c-accent), #3b82f6);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .food-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(34,197,94,0.3);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.3), 0 0 40px var(--c-accent-glow);
+    }
+
+    .food-card:hover::before { opacity: 1; }
+
+    .food-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .food-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .food-badge {
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-discount { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .badge-free    { background: rgba(34,197,94,0.15); color: #4ade80; }
+    .badge-regular { background: rgba(136,136,160,0.15); color: #a0a0b8; }
+
+    .food-details p {
+      margin-bottom: 8px;
+      color: var(--c-muted);
+      font-size: 14px;
+    }
+
+    .food-details p strong { color: var(--c-text); }
+
+    .card-actions { margin-top: 18px; display: flex; justify-content: flex-end; }
+
+    .detail-btn {
+      padding: 10px 18px;
+      border: 1px solid var(--c-border);
+      background: var(--c-surface-2);
+      color: var(--c-text);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s var(--ease);
+    }
+
+    .detail-btn:hover { border-color: var(--c-accent); color: var(--c-accent); transform: translateY(-1px); }
+
+    /* MODALS */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+      animation: fadeIn 0.15s var(--ease);
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .hidden { display: none !important; }
+
+    .modal-content {
+      background: var(--c-surface);
+      width: 100%;
+      max-width: 500px;
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      position: relative;
+      border: 1px solid var(--c-border);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+      animation: slideUp 0.25s var(--ease);
+    }
+
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .close-btn {
+      position: absolute;
+      right: 20px;
+      top: 18px;
+      font-size: 18px;
+      background: var(--c-surface-2);
+      border: 1px solid var(--c-border);
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--c-muted);
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover { background: var(--c-border); color: var(--c-text); }
+
+    .modal-content h2 {
+      margin-bottom: 24px;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .modal-info p {
+      margin-bottom: 12px;
+      color: var(--c-muted);
+      font-size: 14.5px;
+    }
+
+    .modal-info p strong { color: var(--c-text); }
+
+    .form-group { margin-bottom: 18px; }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 14px;
+      background: var(--c-surface-2);
+      color: var(--c-text);
+      outline: none;
+      transition: all 0.25s var(--ease);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--c-accent);
+      box-shadow: 0 0 0 3px var(--c-accent-glow);
+    }
+
+    .form-submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      transition: all 0.25s var(--ease);
+      margin-top: 4px;
+    }
+
+    .form-submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px var(--c-accent-glow); }
+
+    .secondary-btn {
+      background: var(--c-surface-2);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+      padding: 11px 18px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+.logo-img {
+  width: 70px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid rgb(34, 197, 94);
+  background: rgb(10, 10, 15);
+  transform: scale(1.18);
+}.logo-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+    /* margin-top: 5px; */
+
+}
+    .secondary-btn:hover { background: var(--c-border); }
+
+    footer {
+      background: var(--c-surface);
+      color: var(--c-muted);
+      padding: 24px 20px;
+      text-align: center;
+      font-size: 13px;
+      border-top: 1px solid var(--c-border);
+    }
+
+    @media (max-width: 768px) {
+      .topbar { padding: 14px 20px; height: auto; flex-direction: column; gap: 12px; align-items: center; }
+      .nav { flex-wrap: wrap; justify-content: center; gap: 8px; }
+      .hero { flex-direction: column; align-items: flex-start; padding: 32px 24px; }
+      .hero h1 { font-size: 1.5rem; }
+    }
   </style>
 </head>
 
 <body>
 
   <header class="topbar">
-    <div class="logo">FoodSaver</div>
+    <a href="owner.html" class="logo-link">
+  <img src="logo.svg" alt="FoodSaver Logo" class="logo-img">
+  <span>FoodSaver</span>
+</a>
 
     <nav class="nav">
-      <!-- UPDATED NAV LINKS -->
-      <a href="owner.html" style="font-weight: bold;">Inventory</a>
-      <a href="orders.html">Orders</a>
+      <a href="owner.html" class="active" data-i18n="inventory">Inventory</a>
+      <a href="orders.html" data-i18n="orders">Orders</a>
       
-      <a href="#" id="notificationBell" style="display:flex; align-items:center; gap:5px; text-decoration: none; font-weight: bold;">
-         Alerts <span id="notifCount" style="color:#e74c3c; display:none;">(0)</span>
+<a href="#" id="notificationBell" style="display:flex; align-items:center; gap:5px;">
+          <span data-i18n="alerts">Alerts</span>
+        <span id="notifCount" style="color:#e74c3c; display:none;">(0)</span>
       </a>
       
-      <a href="profile.html">Profile</a>
-      <button class="primary-btn" onclick="logout()" style="background:#e74c3c; border:none; padding:8px 15px; color:white; border-radius:8px; cursor:pointer;">Logout</button>
+      <a href="profile.html" data-i18n="profile">Profile</a>
+
+      <select id="languageSelector" class="language-select">
+        <option value="en">English</option>
+        <option value="tr">Türkçe</option>
+      </select>
+<button class="nav-btn danger" id="logoutBtn" onclick="logout()" data-i18n="logout">
+  Logout
+</button>
     </nav>
   </header>
 
@@ -368,22 +898,25 @@
     <!-- Hero Section -->
     <section class="hero">
       <div>
-        <h1>Restaurant Inventory</h1>
-        <p>Manage leftover food, discounts, and available items in one place.</p>
+        <h1 data-i18n="ownerInventory">Restaurant Inventory</h1>
+        <p data-i18n="ownerHeroText">
+          Manage leftover food, discounts, and available items in one place.
+        </p>
       </div>
-      <button class="primary-btn" id="addItemBtn">+ Add New Item</button>
+      <button class="primary-btn" id="addItemBtn" data-i18n="addNewItem">+ Add New Item</button>
     </section>
 
     <!-- Filters Section -->
     <section class="filters-section">
-      <h2>Browse Inventory</h2>
+      <h2 data-i18n="browseInventory">Browse Inventory</h2>
+
       <div class="filters">
-        <button class="filter-btn active" data-filter="all">All Inventory</button>
-        <button class="filter-btn" data-filter="discount">Discounted</button>
-        <button class="filter-btn" data-filter="free">Free Food</button>
-        <button class="filter-btn" data-filter="meal">Meals</button>
-        <button class="filter-btn" data-filter="bakery">Bakery</button>
-        <button class="filter-btn" data-filter="beverage">Beverages</button>
+        <button class="filter-btn active" data-filter="all" data-i18n="allInventory">All Inventory</button>
+        <button class="filter-btn" data-filter="discount" data-i18n="discounted">Discounted</button>
+        <button class="filter-btn" data-filter="free" data-i18n="freeFood">Free Food</button>
+        <button class="filter-btn" data-filter="meal" data-i18n="meals">Meals</button>
+        <button class="filter-btn" data-filter="bakery" data-i18n="bakery">Bakery</button>
+        <button class="filter-btn" data-filter="beverage" data-i18n="beverages">Beverages</button>
       </div>
     </section>
 
@@ -399,10 +932,10 @@
       <h2 id="modalName">Food Name</h2>
 
       <div class="modal-info">
-        <p><strong>Category:</strong> <span id="modalCategory"></span></p>
-        <p><strong>Type:</strong> <span id="modalType"></span></p>
-        <p><strong>Expiry Date:</strong> <span id="modalExpiry"></span></p>
-        <p><strong>Ingredients:</strong></p>
+        <p><strong data-i18n="category">Category:</strong> <span id="modalCategory"></span></p>
+        <p><strong data-i18n="type">Type:</strong> <span id="modalType"></span></p>
+        <p><strong data-i18n="expiryDate">Expiry Date:</strong> <span id="modalExpiry"></span></p>
+        <p><strong data-i18n="ingredients">Ingredients:</strong></p>
         <p id="modalIngredients"></p>
       </div>
     </div>
@@ -412,51 +945,60 @@
   <div class="modal hidden" id="addItemModal">
     <div class="modal-content">
       <button class="close-btn" id="closeAddModal">&times;</button>
-      <h2>Add New Food Item</h2>
+      <h2 data-i18n="addNewFoodItem">Add New Food Item</h2>
 
       <form id="addItemForm">
         <div class="form-group">
-          <label for="foodName">Food Name</label>
+          <label for="foodName" data-i18n="foodName">Food Name</label>
           <input type="text" id="foodName" required />
         </div>
 
         <div class="form-group">
-          <label for="foodCategory">Category</label>
+          <label for="foodCategory" data-i18n="categoryNoColon">Category</label>
           <select id="foodCategory" required>
-            <option value="">Select category</option>
-            <option value="Meal">Meal</option>
-            <option value="Bakery">Bakery</option>
-            <option value="Beverage">Beverage</option>
+            <option value="" data-i18n="selectCategory">Select category</option>
+            <option value="Meal" data-i18n="meal">Meal</option>
+            <option value="Bakery" data-i18n="bakery">Bakery</option>
+            <option value="Beverage" data-i18n="beverage">Beverage</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="foodIngredients">Ingredients (comma separated)</label>
-          <input type="text" id="foodIngredients" placeholder="Rice, Chicken, Spices" required />
+          <label for="foodIngredients" data-i18n="ingredientsComma">Ingredients (comma separated)</label>
+          <input 
+            type="text" 
+            id="foodIngredients" 
+            placeholder="Rice, Chicken, Spices" 
+            data-i18n-placeholder="ingredientsPlaceholder"
+            required 
+          />
         </div>
 
         <div class="form-group">
-          <label for="foodExpiry">Expiry Date</label>
+          <label for="foodExpiry" data-i18n="expiryDateNoColon">Expiry Date</label>
           <input type="date" id="foodExpiry" required />
         </div>
 
         <div class="form-group">
-          <label for="foodType">Type</label>
+          <label for="foodType" data-i18n="typeNoColon">Type</label>
           <select id="foodType" required>
-            <option value="">Select type</option>
-            <option value="discount">Discount</option>
-            <option value="free">Free Food</option>
-            <option value="meal">Meal</option>
-            <option value="bakery">Bakery</option>
-            <option value="beverage">Beverage</option>
+            <option value="" data-i18n="selectType">Select type</option>
+            <option value="discount" data-i18n="discount">Discount</option>
+            <option value="free" data-i18n="freeFood">Free Food</option>
+            <option value="meal" data-i18n="meal">Meal</option>
+            <option value="bakery" data-i18n="bakery">Bakery</option>
+            <option value="beverage" data-i18n="beverage">Beverage</option>
           </select>
         </div>
 
-        <button type="submit" class="primary-btn" style="width: 100%;">Add Item</button>
+       <button type="submit" class="form-submit-btn" data-i18n="addItem">
+  Add Item
+</button>
       </form>
     </div>
   </div>
- <footer>
+
+  <footer>
     &copy; 2026 FoodSaver. All rights reserved.
   </footer>
 </body>

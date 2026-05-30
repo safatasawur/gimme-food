@@ -76,6 +76,21 @@ function getBadgeClass(type) {
   return "badge-regular";
 }
 
+function translateFoodValue(value) {
+  if (!value) return "";
+
+  const key = value.toString().toLowerCase();
+
+  const map = {
+    meal: "meal",
+    bakery: "bakery",
+    beverage: "beverage",
+    discount: "discount",
+    free: "freeFood"
+  };
+
+  return t(map[key] || key);
+}
 function getBadgeLabel(type) {
   if (type === "discount") return "Discount";
   if (type === "free") return "Free Food";
@@ -260,29 +275,29 @@ async function loadOwnerRequests() {
     requestsGrid.innerHTML = "";
     const pendingReqs = requests.filter(r => r.status === 'pending');
 
-    if (pendingReqs.length === 0) {
-      requestsGrid.innerHTML = `<p style="color: #666;">No pending requests at the moment.</p>`;
-      return;
-    }
+   if (pendingReqs.length === 0) {
+  requestsGrid.innerHTML = `<p style="color: #666;">${t("noPendingRequests")}</p>`;
+  return;
+}
 
     pendingReqs.forEach(req => {
       const card = document.createElement("div");
       card.classList.add("food-card"); 
-      card.innerHTML = `
-        <div class="food-header">
-          <div class="food-title">Request #${req.id}</div>
-          <span class="food-badge badge-discount">Needs Action</span>
-        </div>
-        <div class="food-details">
-          <p><strong>Food ID:</strong> ${req.food_id}</p>
-          <p><strong>Customer ID:</strong> ${req.customer_id}</p>
-          <p><strong>Time:</strong> ${new Date(req.created_at).toLocaleTimeString()}</p>
-        </div>
-        <div class="card-actions" style="gap: 10px; display: flex; margin-top: 15px;">
-          <button class="primary-btn" onclick="handleFoodRequest(${req.id}, 'approve')" style="background: #27ae60; flex: 1;">Approve</button>
-          <button class="secondary-btn" onclick="handleFoodRequest(${req.id}, 'decline')" style="background: #e74c3c; color: white; border: none; flex: 1;">Decline</button>
-        </div>
-      `;
+   card.innerHTML = `
+  <div class="food-header">
+    <div class="food-title">${t("requestLabel")} #${req.id}</div>
+    <span class="food-badge badge-discount">${t("needsAction")}</span>
+  </div>
+  <div class="food-details">
+    <p><strong>${t("foodIdLabel")}</strong> ${req.food_id}</p>
+    <p><strong>${t("customerIdLabel")}</strong> ${req.customer_id}</p>
+    <p><strong>${t("timeLabel")}</strong> ${new Date(req.created_at).toLocaleTimeString()}</p>
+  </div>
+  <div class="card-actions" style="gap: 10px; display: flex; margin-top: 15px;">
+    <button class="primary-btn" onclick="handleFoodRequest(${req.id}, 'approve')" style="background: #27ae60; flex: 1;">${t("approve")}</button>
+    <button class="secondary-btn" onclick="handleFoodRequest(${req.id}, 'decline')" style="background: #e74c3c; color: white; border: none; flex: 1;">${t("decline")}</button>
+  </div>
+`;
       requestsGrid.appendChild(card);
     });
   } catch (err) {
@@ -302,8 +317,11 @@ window.handleFoodRequest = async function(reqId, action) {
     });
     
     await resp.json();
-    alert(`Request ${action}d successfully!`); 
-    
+if (action === "approve") {
+  alert(t("requestApprovedSuccess"));
+} else {
+  alert(t("requestDeclinedSuccess"));
+}    
     loadOwnerRequests(); 
     syncInventoryWithServer(); 
   } catch (err) {
@@ -350,43 +368,86 @@ const notifStyle = document.createElement('style');
 notifStyle.innerHTML = `
   .notif-dropdown {
     position: absolute;
-    top: 50px; /* Drops right below the bell */
+    top: 50px;
     right: 0;
     width: 320px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-    border: 1px solid #e5e7eb;
+    background: #13131a;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    border: 1px solid #2a2a3a;
     z-index: 9999;
-    display: none; /* Hidden by default */
+    display: none;
     flex-direction: column;
     overflow: hidden;
   }
-  .notif-dropdown.show { display: flex; }
+
+  .notif-dropdown.show {
+    display: flex;
+  }
+
   .notif-header {
     padding: 15px 20px;
-    border-bottom: 1px solid #e5e7eb;
-    font-weight: bold;
+    border-bottom: 1px solid #2a2a3a;
+    font-weight: 800;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #111;
+    color: #f0f0f5;
+    background: #13131a;
   }
-  .notif-body { max-height: 300px; overflow-y: auto; padding: 10px; }
+
+  .notif-body {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #13131a;
+  }
+
   .notif-item {
     padding: 12px;
-    border-radius: 8px;
+    border-radius: 10px;
     margin-bottom: 8px;
-    background: #fdf2f2;
-    border-left: 4px solid #e74c3c;
+    background: rgba(34, 197, 94, 0.10);
+    border-left: 4px solid #22c55e;
   }
-  .notif-item:last-child { margin-bottom: 0; }
-  .notif-footer { padding: 10px; border-top: 1px solid #e5e7eb; background: #f9fafb; }
+
+  .notif-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .notif-item p {
+    margin: 0;
+    color: #f0f0f5 !important;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .notif-item small {
+    color: #8888a0 !important;
+    font-size: 11px;
+  }
+
+  .notif-footer {
+    padding: 10px;
+    border-top: 1px solid #2a2a3a;
+    background: #13131a;
+  }
+
   .clear-btn {
-    width: 100%; padding: 10px; background: #e74c3c; color: white;
-    border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 800;
   }
-  .clear-btn:hover { background: #c0392b; }
+
+  .clear-btn:hover {
+    box-shadow: 0 8px 24px rgba(34,197,94,0.25);
+    transform: translateY(-1px);
+  }
 `;
 document.head.appendChild(notifStyle);
 
@@ -484,3 +545,7 @@ if (bell && notifDropdown) {
     });
   }
 }
+window.logout = function () {
+  localStorage.clear();
+  window.location.href = "index.html";
+};

@@ -6,7 +6,10 @@
     <script src="config.js"></script>
     <script src="signup.js"></script>
     <title>FoodSaver</title>
-    <style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- <style>
       * {
         box-sizing: border-box;
         margin: 0;
@@ -160,6 +163,315 @@
         font-size: 12px;
         color: #ccc;
       }
+    </style> -->
+        <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --c-bg: #0a0a0f;
+        --c-surface: #13131a;
+        --c-surface-2: #1a1a24;
+        --c-border: #2a2a3a;
+        --c-text: #f0f0f5;
+        --c-muted: #8888a0;
+        --c-accent: #22c55e;
+        --c-accent-glow: rgba(34,197,94,0.25);
+        --c-danger: #ef4444;
+        --c-warning: #f59e0b;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --radius-lg: 20px;
+        --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        --ease: cubic-bezier(0.4,0,0.2,1);
+      }
+
+      body {
+        font-family: var(--font);
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background: var(--c-bg);
+        color: var(--c-text);
+      }
+
+      header {
+        background: rgba(10,10,15,0.8);
+        backdrop-filter: blur(20px);
+        padding: 0 48px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      header a {
+        color: var(--c-text);
+        text-decoration: none;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+
+      .content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: var(--c-bg);
+        padding: 64px 20px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Animated background orbs */
+      .content::before {
+        content: '';
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, var(--c-accent-glow) 0%, transparent 70%);
+        top: -200px;
+        left: -100px;
+        animation: float1 8s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      .content::after {
+        content: '';
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+        bottom: -200px;
+        right: -100px;
+        animation: float2 10s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      @keyframes float1 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(60px, 40px) scale(1.1); }
+      }
+
+      @keyframes float2 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(-40px, -30px) scale(1.15); }
+      }
+
+      .container {
+        width: 100%;
+        max-width: 440px;
+        background: rgba(19,19,26,0.85);
+        backdrop-filter: blur(40px);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: var(--radius-lg);
+        padding: 44px 40px;
+        text-align: center;
+        animation: cardIn 0.6s var(--ease) both;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 0 80px rgba(34,197,94,0.06), 0 32px 64px rgba(0,0,0,0.4);
+      }
+
+      @keyframes cardIn {
+        from { opacity: 0; transform: translateY(32px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .brand-icon {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        font-size: 32px;
+        box-shadow: 0 0 40px var(--c-accent-glow);
+        animation: pulse 3s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 40px var(--c-accent-glow); }
+        50% { box-shadow: 0 0 60px rgba(34,197,94,0.35); }
+      }
+
+      .title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #f0f0f5, #c0c0d0);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .subtitle {
+        font-size: 14.5px;
+        color: var(--c-muted);
+        margin-bottom: 32px;
+        line-height: 1.5;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+        margin-bottom: 6px;
+      }
+
+      .role-btns {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .btn-primary {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font);
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.25s var(--ease);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn-primary::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15));
+        opacity: 0;
+        transition: opacity 0.25s;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px var(--c-accent-glow);
+      }
+
+      .btn-primary:hover::after { opacity: 1; }
+      .btn-primary:active { transform: translateY(0); }
+
+      .btn-outline {
+        width: 100%;
+        padding: 14px;
+        background: transparent;
+        color: var(--c-text);
+        border: 1.5px solid var(--c-border);
+        border-radius: var(--radius-sm);
+        font-family: var(--font);
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s var(--ease);
+      }
+
+      .btn-outline:hover {
+        border-color: var(--c-accent);
+        color: var(--c-accent);
+        background: rgba(34,197,94,0.06);
+        transform: translateY(-2px);
+      }
+
+      input {
+        width: 100%;
+        padding: 14px 16px;
+        margin: 8px 0;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--c-border);
+        font-family: var(--font);
+        font-size: 14.5px;
+        color: var(--c-text);
+        background: var(--c-surface);
+        transition: all 0.25s var(--ease);
+        outline: none;
+      }
+
+      input:focus {
+        border-color: var(--c-accent);
+        box-shadow: 0 0 0 3px var(--c-accent-glow);
+        background: var(--c-surface-2);
+      }
+
+      input::placeholder { color: #555570; }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 20px 0 6px;
+        font-size: 12px;
+        color: #444460;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .divider::before, .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--c-border);
+      }
+
+      .switch {
+        margin-top: 18px;
+        color: var(--c-muted);
+        cursor: pointer;
+        font-size: 14px;
+        transition: color 0.2s;
+      }
+
+      .switch:hover { color: var(--c-text); }
+      .switch strong { color: var(--c-accent); font-weight: 600; }
+
+      .hidden { display: none; }
+.logo-brand {
+  width: 90px;
+  height: 90px;
+  background: #0a0a0f;
+  border: 2px solid #22c55e;
+  border-radius: 50%;
+  overflow: visible;
+  box-shadow: 0 0 40px rgba(34,197,94,0.25);
+}
+
+.logo-brand img {
+  width: 78px;
+  height: 78px;
+  object-fit: contain;
+  transform: none;
+  border-radius: 50%;
+}
+      footer {
+        background: var(--c-surface);
+        color: var(--c-muted);
+        padding: 24px 20px;
+        text-align: center;
+        font-size: 13px;
+        border-top: 1px solid var(--c-border);
+      }
+
+      @media (max-width: 480px) {
+        header { padding: 0 20px; }
+        .container { padding: 32px 24px; }
+      }
     </style>
   </head>
 
@@ -168,28 +480,36 @@
       <nav><a href="index.html">FoodSaver</a></nav>
     </header>
 
-    <div class="content">
+ <div class="content">
       <!-- ROLE SELECTION -->
       <div class="container" id="roleSelection">
-        <div class="title">Welcome</div>
+<div class="brand-icon logo-brand">
+  <img src="profile.png" alt="FoodSaver Logo">
+</div>
+        <div class="title">Welcome Back</div>
         <div class="subtitle">Choose how you want to use the platform</div>
         <div class="role-btns">
-          <button onclick="selectRole('customer')">Customer</button>
-          <button onclick="selectRole('owner')">Owner</button>
+          <button class="btn-primary" onclick="selectRole('customer')">I'm a Customer</button>
+          <button class="btn-outline" onclick="selectRole('owner')">I'm a Restaurant Owner</button>
         </div>
       </div>
 
       <!-- AUTH SECTION -->
       <div class="container hidden" id="authSection">
+        <div class="brand-icon logo-brand">
+          <img src="logo.png" alt="FoodSaver Logo">
+        </div>
         <h2 id="roleTitle"></h2>
+        <p class="subtitle" style="margin-bottom:20px;">Sign in to your account to continue</p>
 
         <!-- LOGIN -->
         <div id="loginForm">
-          <input type="email" placeholder="Email" id="loginEmail" />
+          <input type="email" placeholder="Email address" id="loginEmail" />
           <input type="password" placeholder="Password" id="loginPassword" />
-          <button onclick="login()">Login</button>
+          <button class="btn-primary" onclick="login()">Sign In</button>
+          <div class="divider">or</div>
           <p class="switch" onclick="toggleForm('signup')">
-            Don't have an account? Sign up
+            Don't have an account? <strong>Create one</strong>
           </p>
         </div>
 
@@ -197,41 +517,29 @@
         <div id="signupForm" class="hidden">
           <!-- OWNER ONLY FIELDS -->
           <div id="ownerFields" class="hidden">
-            <input
-              type="text"
-              placeholder="Restaurant Name"
-              id="restaurantName"
-            />
-            <input
-              type="text"
-              placeholder="Restaurant Address"
-              id="restaurantAddress"
-            />
-            <input
-              type="text"
-              placeholder="Type of Food (e.g. Pizza, Sushi)"
-              id="foodType"
-            />
+            <input type="text" placeholder="Restaurant Name" id="restaurantName" />
+            <input type="text" placeholder="Restaurant Address" id="restaurantAddress" />
+            <input type="text" placeholder="Type of Food (e.g. Pizza, Sushi)" id="foodType" />
           </div>
 
-          <input type="text" placeholder="Your Name" id="signupName" />
+          <input type="text" placeholder="Your Full Name" id="signupName" />
           <input type="text" placeholder="Your Address" id="signupAddress" />
           <div style="position: relative">
             <input type="text" id="cityInput" placeholder="City" />
           </div>
-          <input type="email" placeholder="Email" id="signupEmail" />
-          <input type="password" placeholder="Password" id="signupPassword" />
-          <button onclick="signup()">Sign Up</button>
+          <input type="email" placeholder="Email address" id="signupEmail" />
+          <input type="password" placeholder="Create a password" id="signupPassword" />
+          <button class="btn-primary" onclick="signup()">Create Account</button>
+          <div class="divider">or</div>
           <p class="switch" onclick="toggleForm('login')">
-            Already have an account? Login
+            Already have an account? <strong>Sign in</strong>
           </p>
         </div>
       </div>
     </div>
-  </body>
 
-  <!-- FOOTER -->
-  <footer>
-    <div class="footer-bottom">&copy; 2026 FoodSaver. All rights reserved.</div>
-  </footer>
+    <footer>
+      &copy; 2026 FoodSaver. All rights reserved.
+    </footer>
+  </body>
 </html>
