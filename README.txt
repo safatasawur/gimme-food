@@ -1,44 +1,109 @@
-# FoodSaver Project
+# GimmeFood
 
-FoodSaver is a web-based application designed to bridge the gap between restaurants with surplus food and customers looking for meals at a discount or for free. The project features a dual-portal system for Restaurant Owners and Customers, integrated with a Python-based backend.
+GimmeFood is a bilingual web application developed as a group project
+for a university Software Engineering course. It connects restaurants
+that have surplus food with customers looking for free or discounted meals.
 
-## Project Structure
+## Project Purpose
 
-### Frontend (HTML/CSS/JS)
-- index.html: The landing page containing Login and Signup functionality.
-- signup.js: Logic for user registration and role selection (Owner/Customer).
-- customer.html / customer.js: The interface for customers to browse, filter, and request food items.
-- owner.html / owner.js: The dashboard for restaurant owners to manage their inventory and add new food items.
-- profile.html / profile.js: User profile management page.
-- style.css: Global styles for the application.
-
-### Backend (Python/Flask)
-- bridge.py: A Flask-based API that connects the frontend to a SQLite database. It handles data persistence for users and food inventory.
+The project aims to reduce food waste by allowing restaurant owners to
+publish available surplus food and customers to request available portions.
 
 ## Features
 
-1.  User Authentication: Secure signup and login with role-based access control.
-2.  Inventory Management: Owners can add food items with details like category, ingredients, expiry date, and type (Free/Discount).
-3.  Discovery: Customers can search and filter food items by type or category.
-4.  Request System: Customers can request portions of available food, which updates inventory in real-time via the API.
-5.  Persistent Storage: Uses SQLite to store user accounts and food data.
+### Customers
+- Register and log in
+- Browse available food
+- Search and filter food items
+- Request a portion
+- View request history
+- Receive approval or rejection notifications
+- Switch between English and Turkish
 
-## Setup Instructions
+### Restaurant Owners
+- Register and log in
+- Add surplus food items
+- Manage available inventory
+- View customer requests
+- Approve or decline requests
+- Receive request notifications
+- Switch between English and Turkish
 
-### Backend Setup
-1. Ensure Python 3.x is installed.
+## Technology Stack
+
+### Frontend
+- HTML5
+- CSS3
+- Vanilla JavaScript
+- Custom English/Turkish localization
+
+### Backend
+- Python
+- Flask
+- Flask-CORS
+- Gunicorn
+
+### Database and Deployment
+- MySQL
+- PyMySQL
+- Railway
+
+## Project Architecture
+
+The frontend communicates with a Flask REST API. The backend stores user,
+seller, food, request, and notification data in a MySQL database.
+
+## Main API Endpoints
+
+- POST `/api/signup-user`
+- POST `/api/login`
+- GET/POST `/api/food`
+- POST `/api/request-food`
+- GET `/api/owner-requests/<owner_id>`
+- POST `/api/approve-request/<request_id>`
+- POST `/api/decline-request/<request_id>`
+- GET `/api/notifications/<user_id>`
+- POST `/api/mark-notifications-read/<user_id>`
+- GET `/api/customer-requests/<customer_id>`
+
+## Local Setup
+
+1. Clone the repository.
+
 2. Install dependencies:
-   pip install flask flask-cors
-3. Run the backend server:
-   python bridge.py
-   The server will run on http://127.0.0.1:5000.
 
-### Frontend Setup
-1. Open index.html in any modern web browser.
-2. Ensure the backend (bridge.py) is running to allow data synchronization.
+   pip install -r requirements.txt
 
-## Technologies Used
-- Frontend: HTML5, CSS3, JavaScript (ES6)
-- Backend: Python, Flask
-- Database: SQLite
-- API: RESTful via Flask-CORS
+3. Configure the MySQL environment variables:
+
+   MYSQLHOST
+   MYSQLPORT
+   MYSQLUSER
+   MYSQLPASSWORD
+   MYSQLDATABASE
+
+4. Update `config.js` for local development:
+
+   window.API_BASE_URL = "http://127.0.0.1:5000";
+
+5. Start the backend:
+
+   python app.py
+
+6. Open `index.html` using a local development server.
+
+## Contributors
+
+This project was completed by a team of four students as part of our
+Software Engineering course.
+
+Sofiia Valikaramova
+Abdalla Mahmoud Bassiouny Elsayed Zahra
+Safa Tasawur 
+Sameel Ashfaq
+
+## Project Status
+
+This repository represents an academic prototype. Future improvements
+may include token-based authentication, password hashing, automated
+testing, image uploads, and more advanced inventory management.
